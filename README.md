@@ -10,7 +10,8 @@
 | 테스트 환경 | Windows 11, Android Studio, JDK 21, Gradle 8.11.1, AGP 8.7.3, Kotlin 2.0.21, compileSdk/targetSdk 35, **minSdk 28**(Pleos 요건) |
 | 에뮬레이터 | Pleos Connect Emulator v2.1.0 (AVD `Pleos_Connect_v2.1.0`, API 34), 그래픽 Hardware(GPU) |
 | 화면 사양 | 2560×1440, 160dpi (Pleos Connect 에뮬레이터 AVD 설정 기준, 시스템 이미지 android-34 pleos_car_emulator x86_64) |
-| APK 위치 | `apk/[팀명]_DropMate_release.apk` (release 빌드, `keystore.properties`가 없으면 디버그 키로 서명) |
+| 팀명 | J4U (Journey for You) |
+| APK 위치 | `apk/J4U_DropMate_release.apk` (release 빌드, `keystore.properties`가 없으면 디버그 키로 서명) |
 
 ## 개발 기록 (PLAN_mj3 기준, 2026-11-04 신규 생성)
 
