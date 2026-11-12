@@ -1,0 +1,4 @@
+// 차량용 빌드(-PpleosSdk=true)와 함께 사용: Pleos 에뮬레이터에서 NaviHelper 경유지 추가 확인
+allprojects { afterEvaluate { p ->
+    if (p.path == ':app') p.android.defaultConfig.testInstrumentationRunner = 'com.jiye.dropmate.NaviBridgeCheck'
+} }

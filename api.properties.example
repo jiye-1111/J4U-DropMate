@@ -1,0 +1,7 @@
+# 이 파일을 복사해 같은 폴더에 api.properties 로 저장하고 값을 채우세요. (api.properties 는 압축·공유에서 제외)
+tmap.appKey=
+# 로컬 TMAP 호출 예산(누적). 비워 두면 요청당 상한만 적용
+tmap.budget=300
+bus.apiKey=
+subway.apiKey=
+kakao.restApiKey=

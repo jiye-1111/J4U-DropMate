@@ -1,0 +1,9 @@
+allprojects { afterEvaluate { p ->
+    if (p.path == ':engine') {
+        p.tasks.register('runSyntheticChecks', JavaExec) {
+            dependsOn p.tasks.named('testClasses')
+            classpath = p.sourceSets.test.runtimeClasspath
+            mainClass = 'com.jiye.dropmate.engine.EngineChecksKt'
+        }
+    }
+} }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 차량용 빌드(-PpleosSdk=true)에서만 합쳐지는 매니페스트. 2026-11-12 사용자 승인으로 내비 경로 권한 추가. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- NaviHelper 경유지 추가·경로 요청. Pleos 에뮬레이터 내비 서비스 3.0.4 에서 protection=normal 확인 -->
+    <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />
+    <!-- addWaypoint 호출에 필요(에뮬레이터 SecurityException 으로 확인). 2026-11-12 사용자 승인 -->
+    <uses-permission android:name="pleos.car.permission.NAVI_ROUTE_SEARCH" />
+    <!-- Pleos FusedLocation 서비스가 요구(에뮬레이터 SecurityException 으로 확인, protection=dangerous → 실행 중 요청). 2026-11-12 사용자 요청(차량 위치) -->
+    <uses-permission android:name="pleos.car.permission.FUSED_LOCATION" />
+</manifest>

@@ -1,0 +1,7 @@
+allprojects {
+    afterEvaluate { project ->
+        if (project.path == ':app') {
+            project.android.defaultConfig.testInstrumentationRunner = 'com.jiye.dropmate.SearchUiCheck'
+        }
+    }
+}

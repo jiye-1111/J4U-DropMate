@@ -1,0 +1,22 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild
+.cxx
+# 실제 API 파생 결과는 버전 관리 제외
+outputs/phase4/live/
+# 로컬 API 인증 정보
+app/src/main/assets/api.properties
+app/src/main/assets/tmap.properties
+# 서명 키
+keystore.properties
+*.jks
+*.keystore
+# 2026-11-13: 빌드 산출물·APK(키가 들어 있음)·Kotlin 캐시 제외
+.kotlin/
+apk/
+*.apk
+*.aab

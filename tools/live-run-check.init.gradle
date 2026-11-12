@@ -1,0 +1,4 @@
+// 승인된 실제 TMAP 1회 실행용(LiveRunCheck). 남동인더스파크→논현(운전자)/망포(동승자)
+allprojects { afterEvaluate { p ->
+    if (p.path == ':app') p.android.defaultConfig.testInstrumentationRunner = 'com.jiye.dropmate.LiveRunCheck'
+} }
