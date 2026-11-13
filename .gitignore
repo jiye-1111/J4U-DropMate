@@ -17,6 +17,8 @@ keystore.properties
 *.keystore
 # 2026-11-13: 빌드 산출물·APK(키가 들어 있음)·Kotlin 캐시 제외
 .kotlin/
-apk/
+apk/*
+# 공개용 release APK만 예외로 올린다(무료 TMAP 키와 무료 카카오 키만 들어 있음)
 *.apk
 *.aab
+!apk/J4U_DropMate_release.apk
