@@ -36,8 +36,8 @@ fun NaviHandoffCard(r: RecommendResult) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF1C232D))
         .border(1.dp, Color(0xFF303B49), RoundedCornerShape(14.dp)).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("차량 내비로 하차 지점 안내", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        Text("연결: ${bridge.label}", fontSize = 11.sp, color = Color(0xFFA5B2C2))
+        Text("차량 내비로 하차 지점 안내", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text("연결: ${bridge.label}", fontSize = 14.sp, color = Color(0xFFA5B2C2))
         Button(onClick = {
             if (best == null) return@Button
             busy = true
@@ -50,8 +50,8 @@ fun NaviHandoffCard(r: RecommendResult) {
             Text(if (decision.allowed) "★ 하차 지점을 경유지로 추가" else "길안내 전달 차단됨")
         }
         if (!decision.allowed) decision.reasons.forEach {
-            Text("· $it", fontSize = 11.sp, color = Color(0xFFFFB74D))
+            Text("· $it", fontSize = 14.sp, color = Color(0xFFFFB74D))
         }
-        status?.let { Text(it, fontSize = 11.sp, color = Color(0xFF76B9FF)) }
+        status?.let { Text(it, fontSize = 14.sp, color = Color(0xFF76B9FF)) }
     }
 }

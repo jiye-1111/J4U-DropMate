@@ -268,7 +268,7 @@ fun DriveScreen(vm: AppViewModel) {
             if (step != Step.NAV) Text("설정", Modifier.align(Alignment.TopEnd).padding(top = 16.dp + 108.dp + 12.dp + 56.dp + 12.dp, end = 16.dp)
                 .size(56.dp).clip(CircleShape).background(Hd.Ink)
                 .clickable { if (driving.restricted) vm.message = "설정은 정차 중에만 열 수 있어요." else showKeySettings = true }
-                .wrapContentSize(), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                .wrapContentSize(), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             // 주행이 시작되면 자동으로 닫힌다
             if (showKeySettings && !driving.restricted) TmapKeyDialog(vm) { showKeySettings = false }
             if (step != Step.NAV) LogoPill(Modifier.align(Alignment.TopStart).padding(start = 24.dp, top = 20.dp)) {
@@ -279,7 +279,7 @@ fun DriveScreen(vm: AppViewModel) {
                 Text("지도를 눌러 ${role.title}를 정하세요", Modifier.align(Alignment.TopCenter).padding(top = 72.dp)
                     .clip(RoundedCornerShape(20.dp)).background(Hd.Navy).padding(horizontal = 16.dp, vertical = 8.dp), color = Color.White, fontSize = 16.sp)
             }
-            Text("© OpenStreetMap · OpenFreeMap", Modifier.align(Alignment.BottomEnd).padding(8.dp), color = Hd.Muted, fontSize = 10.sp)
+            Text("© OpenStreetMap · OpenFreeMap", Modifier.align(Alignment.BottomEnd).padding(8.dp), color = Hd.Muted, fontSize = 11.sp)
             if (step == Step.OPTIONS && r != null && !(driving.restricted)) {
                 OptionsLayout(r, routeKind, { routeKind = it }, vm, navSession != null,
                     onNav = { sim, simOnly -> navSim = sim; navSimOnly = simOnly; navState = null; driveOnly = false
@@ -304,11 +304,11 @@ fun DriveScreen(vm: AppViewModel) {
                                 } }
                             }, driveOnlyBusy = driveOnlyBusy)
                             Text(when {
-                                fix != null -> "내 위치: ${vloc.label} · ${SimpleDateFormat("HH:mm:ss", Locale.KOREA).format(Date(fix!!.timeMillis))} 받음"
+                                fix != null -> "내 위치 확인됨 · ${SimpleDateFormat("HH:mm", Locale.KOREA).format(Date(fix!!.timeMillis))}"
                                 locErr != null -> "내 위치: $locErr"
-                                vloc.available -> "내 위치: Pleos 차량 위치 기다리는 중"
-                                else -> "내 위치: 기기 위치 사용(차량 위치 SDK 없는 빌드)"
-                            }, color = Hd.Muted, fontSize = 13.sp)
+                                vloc.available -> "내 위치: 차량 위치를 기다리는 중"
+                                else -> "내 위치: 기기 위치 사용"
+                            }, color = Hd.Muted, fontSize = 16.sp)
                         }
                         Step.RECOMMEND -> r?.let { RecommendStep(it, { step = Step.OPTIONS }, { vm.clearResult(); step = Step.INPUT }, showDetail) { showDetail = !showDetail } }
                         Step.OPTIONS -> r?.let { OptionsStep(it, routeKind, { routeKind = it }, vm, navSession != null,
@@ -367,7 +367,7 @@ private fun GuideBar(r: RecommendResult, driving: DrivingMonitor, mod: Modifier,
 @Composable
 private fun BarCell(mod: Modifier, k: String, v: String) {
     Column(mod.padding(horizontal = 18.dp)) {
-        Text(k, color = Hd.Sub, fontSize = 14.sp)
+        Text(k, color = Hd.Sub, fontSize = 17.sp)
         Text(v, color = Hd.Text, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -436,11 +436,11 @@ private fun InputStep(vm: AppViewModel, askLoc: () -> Unit, onDriveOnly: () -> U
     val canDrive = vm.places[Role.ORIGIN] != null && vm.places[Role.DRIVER] != null
     if (withPassenger) {
         BigButton(if (vm.running) "하차점을 찾는 중…" else "함께 갈 경로 찾기  →", enabled = !vm.running && vm.ready() == null) { vm.runConfigured() }
-        vm.ready()?.takeIf { !vm.running }?.let { Text(it, color = Hd.Sub, fontSize = 15.sp) }
+        vm.ready()?.takeIf { !vm.running }?.let { Text(it, color = Hd.Sub, fontSize = 18.sp) }
         BigButton("동승자 없이 바로 안내", primary = false, enabled = canDrive && !driveOnlyBusy, onClick = onDriveOnly)
     } else {
         BigButton(if (driveOnlyBusy) "경로를 찾는 중…" else "안내 시작", enabled = canDrive && !driveOnlyBusy, onClick = onDriveOnly)
-        if (!canDrive) Text("출발지와 운전자 목적지를 정하세요", color = Hd.Sub, fontSize = 15.sp)
+        if (!canDrive) Text("출발지와 운전자 목적지를 정하세요", color = Hd.Sub, fontSize = 18.sp)
     }
 }
 
@@ -468,14 +468,14 @@ private fun BigPlaceCard(vm: AppViewModel, role: Role, askLoc: () -> Unit) {
                     inner()
                 }
             })
-        p?.address?.let { Text(it, color = Hd.Sub, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        p?.address?.let { Text(it, color = Hd.Sub, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         vm.searchHits?.takeIf { it.first == role }?.let { (_, hits) ->
-            if (vm.searchLoading) Text("검색 중…", color = Hd.Sub, fontSize = 15.sp)
-            vm.searchNotice?.let { Text(it, color = Hd.Sub, fontSize = 14.sp) }
+            if (vm.searchLoading) Text("검색 중…", color = Hd.Sub, fontSize = 18.sp)
+            vm.searchNotice?.let { Text(it, color = Hd.Sub, fontSize = 17.sp) }
             hits.take(5).forEach { h ->
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { vm.setPlace(role, h) }.padding(horizontal = 8.dp, vertical = 8.dp)) {
                     Text(h.label, color = Hd.Text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(h.address ?: "", color = Hd.Sub, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(h.address ?: "", color = Hd.Sub, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -485,7 +485,7 @@ private fun BigPlaceCard(vm: AppViewModel, role: Role, askLoc: () -> Unit) {
 @Composable
 private fun SmallLink(text: String, onClick: () -> Unit) {
     Text(text, Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).background(Hd.SkySoft).padding(horizontal = 12.dp, vertical = 6.dp),
-        color = Hd.Navy, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        color = Hd.Navy, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
 }
 
 // ---------------- 02 하차점 추천 ----------------
@@ -506,7 +506,7 @@ private fun RecommendStep(r: RecommendResult, onOptions: () -> Unit, onReset: ()
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Hd.Card).padding(22.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(title, color = Hd.Text, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         // 2026-11-13 사용자: 시간대마다 결과가 달라지므로 '현재 교통 기준'과 조회 시각을 함께 보여 준다
-        Text(if (b != null) "조회한 후보 중 추천 · 현재 교통 기준 ${hhmm(r.t0EpochSec)} 조회" else r.verdictReason, color = Hd.Sub, fontSize = 15.sp)
+        Text(if (b != null) "조회한 후보 중 추천 · 현재 교통 기준 ${hhmm(r.t0EpochSec)} 조회" else r.verdictReason, color = Hd.Sub, fontSize = 18.sp)
     }
     val ranked = r.dropRanking().filter { it.rank != null }
     fun saveOf(c: CandidateResult) = r.solo?.arrivalEpochSec?.let { s -> c.passengerArrivalEpochSec?.let { s - it } }
@@ -514,37 +514,37 @@ private fun RecommendStep(r: RecommendResult, onOptions: () -> Unit, onReset: ()
         // 01 추천 하차점(어두운 카드)
         val sv = r.savingSec
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Hd.Ink).padding(22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(if (r.verdict == Verdict.RECOMMEND) "01  추천 하차점" else "01  함께 간다면 가장 나은 곳", color = Hd.Mint, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(if (r.verdict == Verdict.RECOMMEND) "01  추천 하차점" else "01  함께 간다면 가장 나은 곳", color = Hd.Mint, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text(b.plan.label.replace(" 인근 경로상 하차", " 근처").replace("운전자 목적지까지 동승 후 이동", "운전자 목적지에서 함께 하차"),
                 color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(stopSuitabilityText(b.plan.stopSuitability), color = Color(0xFFB9BACB), fontSize = 13.sp)
+            Text(dropPlaceText(b.plan), color = Color(0xFFB9BACB), fontSize = 16.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(Hd.DarkSub).padding(14.dp)) {
-                    Text("운전자 우회", color = Color(0xFFB9BACB), fontSize = 14.sp)
+                    Text("운전자 우회", color = Color(0xFFB9BACB), fontSize = 17.sp)
                     Text(b.driverAddSec?.let { "+" + mins(it.toLong()) } ?: "미확인", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold)
                 }
                 val good = sv != null && sv > 0
                 Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(if (good) Hd.Mint else Color(0xFFF6D9D6)).padding(14.dp)) {
-                    Text(if (sv == null) "동승자 절약" else if (good) "동승자 절약" else "동승자 손해", color = Hd.Ink, fontSize = 14.sp)
+                    Text(if (sv == null) "동승자 절약" else if (good) "동승자 절약" else "동승자 손해", color = Hd.Ink, fontSize = 17.sp)
                     Text(sv?.let { mins(it) } ?: "미확인", color = Hd.Ink, fontSize = 34.sp, fontWeight = FontWeight.Bold)
                 }
             }
             val direct = r.baseline?.totalTimeSec
             b.driverAddSec?.let { add ->
                 val pct = direct?.takeIf { it > 0 }?.let { (add * 100.0 / it).toInt() }
-                Text("직행 대비 " + (pct?.let { "+$it%" } ?: "미확인") + " · 한도 ${direct?.let { mins(Policy().allowedDetourSec(it).toLong()) } ?: "미확인"}(직행 30%·최대 15분)" + if (b.nearLimit) " · 한도에 가까움" else "",
-                    color = if (b.nearLimit) Color(0xFFFFD08A) else Color(0xFFB9BACB), fontSize = 13.sp)
+                Text("운전자 허용 우회 ${direct?.let { mins(Policy().allowedDetourSec(it).toLong()) } ?: "미확인"} 이내" + (pct?.let { " · 직행보다 $it% 더" } ?: "") + if (b.nearLimit) " · 허용치에 가까움" else "",
+                    color = if (b.nearLimit) Color(0xFFFFD08A) else Color(0xFFB9BACB), fontSize = 16.sp)
             }
         }
         // 02 다른 하차점
         ranked.filter { it.candidate.plan.id != b.plan.id }.take(2).forEachIndexed { i, d ->
             val c = d.candidate; val s2 = saveOf(c)
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Hd.Card).padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("0${i + 2}  다른 하차점", color = Hd.Purple, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("0${i + 2}  다른 하차점", color = Hd.Purple, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 Text(c.plan.label.replace(" 인근 경로상 하차", " 근처").replace("운전자 목적지까지 동승 후 이동", "운전자 목적지"),
                     color = Hd.Text, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("우회 +${mins(c.driverAddSec?.toLong())} · 동승자 " + (s2?.let { if (it > 0) "${mins(it)} 절약" else "${mins(it)} 늦음" } ?: "미확인"),
-                    color = Hd.Sub, fontSize = 15.sp)
+                    color = Hd.Sub, fontSize = 18.sp)
             }
         }
     }
@@ -565,7 +565,7 @@ private fun CompareBar(r: RecommendResult, mod: Modifier, onOptions: () -> Unit)
     Row(mod.padding(24.dp).widthIn(max = 760.dp).clip(RoundedCornerShape(26.dp)).background(Hd.Card).padding(start = 26.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
         Column {
-            Text("각자의 시간을 함께 비교해요", color = Hd.Sub, fontSize = 14.sp)
+            Text("각자의 시간을 함께 비교해요", color = Hd.Sub, fontSize = 17.sp)
             Text("단독 이동 ${rel(r.solo?.arrivalEpochSec)}  →  함께 이동 ${rel(b.passengerArrivalEpochSec)}", color = Hd.Text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
         Text("하차 후 경로 보기", Modifier.clip(RoundedCornerShape(18.dp)).background(Hd.Purple).clickable(onClick = onOptions)
@@ -579,14 +579,14 @@ private fun LogoPill(mod: Modifier, onClick: () -> Unit) {
     Row(mod.clip(RoundedCornerShape(28.dp)).background(Hd.Ink).clickable(onClick = onClick).padding(horizontal = 22.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(Modifier.size(12.dp).clip(CircleShape).background(Hd.Mint))
-        Text("dropmate", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text("DropMate", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
 private fun Tile(mod: Modifier, label: String, value: String, valueColor: Color, bg: Color) {
     Column(mod.clip(RoundedCornerShape(16.dp)).background(bg).padding(14.dp)) {
-        Text(label, color = Hd.Sub, fontSize = 15.sp)
+        Text(label, color = Hd.Sub, fontSize = 18.sp)
         Text(value, color = valueColor, fontSize = 40.sp, fontWeight = FontWeight.Bold)
     }
 }
@@ -606,7 +606,7 @@ private fun DetailCompare(r: RecommendResult) {
             val c = d.candidate
             DetailRow((d.rank?.let { "$it. " } ?: "– ") + c.plan.label, c.passengerArrivalEpochSec?.let { rel(it) } ?: c.reason.take(28))
         }
-        Text(r.bestScope, color = Hd.Muted, fontSize = 12.sp)
+        Text(r.bestScope, color = Hd.Muted, fontSize = 15.sp)
     }
 }
 
@@ -634,7 +634,7 @@ private fun OptionsStep(r: RecommendResult, kind: RouteOptionKind, onKind: (Rout
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         (o?.kinds ?: listOf(k)).forEach { kk ->
                             Text(kk.label, Modifier.clip(RoundedCornerShape(8.dp)).background(if (kk == k) Hd.Navy else Hd.SkySoft).padding(horizontal = 10.dp, vertical = 3.dp),
-                                color = if (kk == k) Color.White else Hd.Navy, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                color = if (kk == k) Color.White else Hd.Navy, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                     val fastestArr = RouteOptions.pick(b.routeOptions, RouteOptionKind.FASTEST)?.itinerary?.arrivalEpochSec
@@ -648,7 +648,7 @@ private fun OptionsStep(r: RecommendResult, kind: RouteOptionKind, onKind: (Rout
                     o?.itinerary?.itinerary?.let { i ->
                         Text("도보 ${minText(i.totalWalkTimeSec)} · 환승 ${i.transferCount?.let { "${it}회" } ?: "?"}", color = Hd.Sub, fontSize = 16.sp)
                         Text(i.legs.joinToString(" → ") { l -> if (l.mode == LegMode.WALK) "도보" else "${legKind(l.mode)} ${l.route ?: ""}".trim() },
-                            color = Hd.Sub, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            color = Hd.Sub, fontSize = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
                 if (o != null) Text(if (on) "선택됨" else "선택", Modifier.clip(RoundedCornerShape(12.dp)).background(if (on) Hd.Navy else Hd.SkySoft)
@@ -656,7 +656,7 @@ private fun OptionsStep(r: RecommendResult, kind: RouteOptionKind, onKind: (Rout
             }
         }
     }
-    Text("같은 경로가 여러 기준에 해당하면 배지를 함께 표시해요 · 하차점 순위는 최소시간 기준", color = Hd.Muted, fontSize = 13.sp)
+    Text("같은 경로가 여러 기준에 해당하면 배지를 함께 표시해요 · 하차점 순위는 최소시간 기준", color = Hd.Muted, fontSize = 16.sp)
     // 앱 안 길안내: 하차 가능 판단이 허용될 때만 실제 위치 안내, 막히면 모의 주행 미리보기만
     val decision = NavHandoff.decide(r, r.best)
     if (navReady) {
@@ -664,7 +664,7 @@ private fun OptionsStep(r: RecommendResult, kind: RouteOptionKind, onKind: (Rout
             BigButton("DropMate로 안내 시작") { onNav(false, false) }
             BigButton("모의 주행으로 미리보기", primary = false) { onNav(true, false) }
         } else BigButton("모의 주행으로 미리보기(실제 안내 차단)", primary = false) { onNav(true, true) }
-    } else Text("안내 경로 정보가 없어 앱 안 길안내를 시작할 수 없어요", color = Hd.Muted, fontSize = 13.sp)
+    } else Text("안내 경로 정보가 없어 앱 안 길안내를 시작할 수 없어요", color = Hd.Muted, fontSize = 16.sp)
     HandoffButton(r, vm, onGuide)
 }
 
@@ -688,9 +688,9 @@ private fun HandoffButton(r: RecommendResult, vm: AppViewModel, onGuide: (String
             busy = false
         }
     }
-    if (!bridge.available) Text("이 빌드에는 차량 내비 연결이 없어요(차량용 빌드에서 동작)", color = Hd.Muted, fontSize = 13.sp)
-    if (!decision.allowed) decision.reasons.forEach { Text("· $it", color = Hd.Warn, fontSize = 15.sp) }
-    err?.let { Text(it, color = Hd.Bad, fontSize = 15.sp) }
+    if (!bridge.available) Text("이 빌드에는 차량 내비 연결이 없어요(차량용 빌드에서 동작)", color = Hd.Muted, fontSize = 16.sp)
+    if (!decision.allowed) decision.reasons.forEach { Text("· $it", color = Hd.Warn, fontSize = 18.sp) }
+    err?.let { Text(it, color = Hd.Bad, fontSize = 18.sp) }
 }
 
 // ---------------- 04 길안내 ----------------
@@ -701,7 +701,7 @@ private fun GuideStep(r: RecommendResult, opt: RouteOption?, msg: String?, vm: A
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Hd.Navy).padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text("차량 내비에서 길안내", color = Color(0xFF9FD8EA), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Text(msg ?: "", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("방향 안내는 Pleos 차량 내비 화면에 표시돼요", color = Color(0xFFB7C6D8), fontSize = 14.sp)
+        Text("방향 안내는 Pleos 차량 내비 화면에 표시돼요", color = Color(0xFFB7C6D8), fontSize = 17.sp)
     }
     CardBox {
         val toDrop = (b.dropCompleteEpochSec ?: r.t0EpochSec) - r.t0EpochSec
@@ -715,7 +715,7 @@ private fun GuideStep(r: RecommendResult, opt: RouteOption?, msg: String?, vm: A
             Text("동승자 도착 예상 ${hhmm(o.itinerary.arrivalEpochSec)}", color = Hd.Navy, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
         }
     }
-    Text("주행 중에는 입력·비교 화면이 잠겨요", color = Hd.Muted, fontSize = 14.sp)
+    Text("주행 중에는 입력·비교 화면이 잠겨요", color = Hd.Muted, fontSize = 17.sp)
     BigButton("추천 화면으로", primary = false, onClick = onBack)
 }
 
@@ -736,7 +736,7 @@ private fun DropArrivedCard(planned: RouteOption?, refreshed: List<RouteOption>?
             Box(Modifier.size(12.dp).clip(CircleShape).background(Hd.Mint))
             Text("하차 지점 도착", color = Hd.Ink, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         }
-        note?.let { Text(it, color = Hd.Purple, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
+        note?.let { Text(it, color = Hd.Purple, fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
         if (!refreshed.isNullOrEmpty()) {
             // 하차 시점 재계산 결과: 최소시간·최소환승·최소도보(같은 경로는 배지 병합)
             refreshed.forEach { o ->
@@ -745,19 +745,19 @@ private fun DropArrivedCard(planned: RouteOption?, refreshed: List<RouteOption>?
                     val dark = RouteOptionKind.FASTEST in o.kinds
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         o.kinds.forEach { k -> Text(k.label, Modifier.clip(RoundedCornerShape(8.dp)).background(if (dark) Hd.Mint else Hd.SkySoft).padding(horizontal = 8.dp, vertical = 2.dp),
-                            color = if (dark) Hd.Ink else Hd.Purple, fontSize = 13.sp, fontWeight = FontWeight.Bold) }
+                            color = if (dark) Hd.Ink else Hd.Purple, fontSize = 16.sp, fontWeight = FontWeight.Bold) }
                     }
                     Text("도착 " + hhmm(o.itinerary.arrivalEpochSec) + " · 환승 ${i.transferCount ?: "?"}회 · 도보 ${minText(i.totalWalkTimeSec)}",
                         color = if (dark) Color.White else Hd.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                     Text(i.legs.filter { it.mode != LegMode.WALK }.joinToString(" → ") { "${legKind(it.mode)} ${it.route ?: ""}".trim() },
-                        color = if (dark) Color(0xFFB9BACB) else Hd.Sub, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        color = if (dark) Color(0xFFB9BACB) else Hd.Sub, fontSize = 17.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
         } else planned?.let { o ->
             Text("출발 전 계산: " + o.kinds.joinToString("·") { it.label } + " · 도착 예정 " + hhmm(o.itinerary.arrivalEpochSec), color = Hd.Text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-            o.itinerary.itinerary.legs.forEach { l -> Text("· " + legLabel(l), color = Hd.Sub, fontSize = 15.sp) }
-        } ?: Text("동승자 경로 정보 없음", color = Hd.Muted, fontSize = 15.sp)
-        Text("운전자는 목적지로 안내를 이어가요 · 시간은 TMAP 예상(실시간 배차 대기 미반영)", color = Hd.Muted, fontSize = 12.sp)
+            o.itinerary.itinerary.legs.forEach { l -> Text("· " + legLabel(l), color = Hd.Sub, fontSize = 18.sp) }
+        } ?: Text("동승자 경로 정보 없음", color = Hd.Muted, fontSize = 18.sp)
+        Text("운전자는 목적지로 안내를 이어가요 · 시간은 TMAP 예상(실시간 배차 대기 미반영)", color = Hd.Muted, fontSize = 15.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             PillButton("지금 시각으로 다시 계산", false, Modifier.weight(1f), onClick = onRefresh)
             PillButton("확인", true, Modifier.weight(0.6f), onClick = onClose)
@@ -777,16 +777,16 @@ private fun BoxScope.OptionsLayout(r: RecommendResult, kind: RouteOptionKind, on
         .padding(horizontal = 24.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Column(Modifier.weight(1f)) {
             Text("$dropName  →  $destName", color = Hd.Text, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(if (b.plan.type == CandidateType.P_VIA) "동승자 목적지 문 앞까지 함께 가요" else "하차 후 동승자 이동 방법 · 하차점 순위는 빠른 도착 기준", color = Hd.Sub, fontSize = 14.sp)
+            Text(if (b.plan.type == CandidateType.P_VIA) "동승자 목적지 앞까지 함께 가요" else "하차 후 동승자 이동 방법 · 하차점 순위는 빠른 도착 기준", color = Hd.Sub, fontSize = 17.sp)
         }
         Text("← 하차점", Modifier.clip(RoundedCornerShape(14.dp)).background(Hd.Bg).clickable(onClick = onBack).padding(horizontal = 14.dp, vertical = 10.dp),
-            color = Hd.Sub, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            color = Hd.Sub, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
     }
     // 아래: 카드 3장 + 안내 버튼 줄
     Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (b.plan.type == CandidateType.P_VIA) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Hd.Ink).padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("문 앞 하차", Modifier.clip(RoundedCornerShape(10.dp)).background(Hd.Mint).padding(horizontal = 10.dp, vertical = 4.dp), color = Hd.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("목적지 앞 하차", Modifier.clip(RoundedCornerShape(10.dp)).background(Hd.Mint).padding(horizontal = 10.dp, vertical = 4.dp), color = Hd.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text("도착 ${hhmm(b.passengerArrivalEpochSec)}", color = Color.White, fontSize = 40.sp, fontWeight = FontWeight.Bold)
             Text("동승자 목적지 앞에서 내려요 · 대중교통·도보 이동 없음 · 운전자 우회 +${mins(b.driverAddSec?.toLong())}", color = Color(0xFFB9BACB), fontSize = 16.sp)
         } else Row(Modifier.fillMaxWidth().height(250.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -800,7 +800,7 @@ private fun BoxScope.OptionsLayout(r: RecommendResult, kind: RouteOptionKind, on
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         (o?.kinds ?: listOf(k)).forEach { kk ->
                             Text(kk.label, Modifier.clip(RoundedCornerShape(10.dp)).background(if (on) Hd.Mint else Hd.SkySoft).padding(horizontal = 10.dp, vertical = 4.dp),
-                                color = if (on) Hd.Ink else Hd.Purple, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                color = if (on) Hd.Ink else Hd.Purple, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                     val fg = if (on) Color.White else Hd.Text; val sub = if (on) Color(0xFFB9BACB) else Hd.Sub
@@ -813,7 +813,7 @@ private fun BoxScope.OptionsLayout(r: RecommendResult, kind: RouteOptionKind, on
                     o?.itinerary?.itinerary?.let { i ->
                         Text("환승 ${i.transferCount?.let { "${it}회" } ?: "?"} · 도보 ${minText(i.totalWalkTimeSec)}", color = sub, fontSize = 16.sp)
                         Text(i.legs.filter { it.mode != LegMode.WALK }.joinToString(" → ") { l -> "${legKind(l.mode)} ${l.route ?: ""}".trim() },
-                            color = sub, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            color = sub, fontSize = 17.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                     Spacer(Modifier.weight(1f))
                     if (o != null) Text(if (on) "선택됨 ✓" else "이 경로 선택 →", color = if (on) Hd.Mint else Hd.Purple, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -830,7 +830,7 @@ private fun BoxScope.OptionsLayout(r: RecommendResult, kind: RouteOptionKind, on
             } else if (navReady) PillButton("모의 주행 미리보기(실제 안내 차단)", false, Modifier.weight(1.6f)) { onNav(true, true) }
             Box(Modifier.weight(1f)) { HandoffCompact(r, vm, onGuide) }
         }
-        if (!decision.allowed) Text(decision.reasons.joinToString(" · "), color = Hd.Warn, fontSize = 14.sp,
+        if (!decision.allowed) Text(decision.reasons.joinToString(" · "), color = Hd.Warn, fontSize = 17.sp,
             modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Hd.WarnBg).padding(horizontal = 12.dp, vertical = 6.dp))
     }
 }
@@ -880,7 +880,7 @@ private fun TmapKeyDialog(vm: AppViewModel, onClose: () -> Unit) {
             Text(if (prefix != null) "지금 쓰는 키: 직접 입력한 키 (${prefix}••••)" else "지금 쓰는 키: 앱 기본 키",
                 color = Hd.Navy, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Text("기본 키는 하루 호출 수가 적어요. 한도가 차면 본인 TMAP 앱 키를 넣어 주세요. 키는 이 기기 안에만 저장돼요.",
-                color = Hd.Sub, fontSize = 15.sp, lineHeight = 21.sp)
+                color = Hd.Sub, fontSize = 18.sp, lineHeight = 21.sp)
             BasicTextField(input, { input = it.trim() }, singleLine = true,
                 textStyle = TextStyle(color = Hd.Text, fontSize = 20.sp), cursorBrush = SolidColor(Hd.Sky),
                 visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
@@ -917,4 +917,13 @@ private fun RecenterButton(modifier: Modifier, onClick: () -> Unit) {
             drawLine(Hd.Purple, c + d * r, c + d * l, strokeWidth = w)
         }
     }
+}
+
+/** 추천 카드의 하차 위치 설명(화면용 쉬운 말). 엔진의 판정 값은 그대로 쓴다. */
+private fun dropPlaceText(p: PlannedCandidate): String = when (p.stopSuitability) {
+    StopSuitability.DESTINATION -> if (p.type == CandidateType.D_DROP) "운전자 목적지에서 함께 내려요" else "동승자 목적지 앞에서 내려요"
+    StopSuitability.ROAD_OK -> "일반도로에서 내려요(터널·고속도로 아님)"
+    StopSuitability.UNVERIFIED -> "도로 정보 없음"
+    StopSuitability.NO_STOP -> "하차 불가 도로"
+    StopSuitability.VERIFIED -> "현장 확인된 곳"
 }

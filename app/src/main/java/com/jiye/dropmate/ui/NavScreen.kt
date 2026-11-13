@@ -134,8 +134,8 @@ fun NavOverlay(st: NavState, sim: Boolean, simAllowedOnly: Boolean, destName: St
                 }
             }
             st.after?.let { a -> Text("이후 ${distText(a.distanceM)} " + (if (a.isDrop) "하차 지점" else a.label), color = Hd.Sub, fontSize = 16.sp) }
-            if (offRoute) Text("경로를 벗어났어요 · 경로로 돌아가 주세요", color = Hd.Warn, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-            note?.let { Text(it, color = Hd.Purple, fontSize = 15.sp, fontWeight = FontWeight.SemiBold) }
+            if (offRoute) Text("경로를 벗어났어요 · 경로로 돌아가 주세요", color = Hd.Warn, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            note?.let { Text(it, color = Hd.Purple, fontSize = 18.sp, fontWeight = FontWeight.SemiBold) }
         }
         // 오른쪽 위: 하차점까지 알약 + 보기 버튼
         Column(Modifier.align(Alignment.TopEnd).padding(20.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -147,7 +147,7 @@ fun NavOverlay(st: NavState, sim: Boolean, simAllowedOnly: Boolean, destName: St
             }
             Text(if (sim) "시연 모드" + (if (simAllowedOnly) " · 실제 안내 차단 지점" else "") else if (waitingFix) "실제 위치 대기 중" else "실제 위치",
                 Modifier.clip(RoundedCornerShape(16.dp)).background(if (sim) Hd.WarnBg else Hd.Card).padding(horizontal = 12.dp, vertical = 6.dp),
-                color = if (sim) Hd.Warn else Hd.Sub, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                color = if (sim) Hd.Warn else Hd.Sub, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SmallChip(if (tilt) "3D" else "2D", onToggleTilt)
                 SmallChip(if (voiceOn) "음성 켬" else "음성 끔", onToggleVoice)
@@ -156,8 +156,8 @@ fun NavOverlay(st: NavState, sim: Boolean, simAllowedOnly: Boolean, destName: St
             passengerReady?.let {
                 Column(Modifier.padding(top = 8.dp).width(300.dp).clip(RoundedCornerShape(22.dp)).background(Hd.Card).padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("동승자 경로 준비 완료", color = Hd.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text(it, color = Hd.Sub, fontSize = 14.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                    Text("정차 후 확인해요 · 휴대폰 이어보기는 준비 중", color = Hd.Muted, fontSize = 12.sp)
+                    Text(it, color = Hd.Sub, fontSize = 17.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    Text("정차 후 확인해요 · 휴대폰 이어보기는 준비 중", color = Hd.Muted, fontSize = 15.sp)
                 }
             }
         }
@@ -165,12 +165,12 @@ fun NavOverlay(st: NavState, sim: Boolean, simAllowedOnly: Boolean, destName: St
         Row(Modifier.align(Alignment.BottomCenter).padding(20.dp).fillMaxWidth().height(96.dp).clip(RoundedCornerShape(28.dp)).background(Hd.Ink)
             .padding(start = 26.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(28.dp)) {
             Column {
-                Text("운전자 목적지 · $destName", color = Color(0xFFB9BACB), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 280.dp))
+                Text("운전자 목적지 · $destName", color = Color(0xFFB9BACB), fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 280.dp))
                 Text(SimpleDateFormat("HH:mm", Locale.KOREA).format(Date(System.currentTimeMillis() + (st.remainingSec * 1000).toLong())) +
                     " · ${(st.remainingSec / 60.0 + 0.5).toInt()}분 · ${distText(st.remainingM)}", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
             if (detourText != null || savingText != null) Column(Modifier.weight(1f)) {
-                Text("함께 이동하는 이득", color = Color(0xFFB9BACB), fontSize = 14.sp)
+                Text("함께 이동하는 이득", color = Color(0xFFB9BACB), fontSize = 17.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     detourText?.let { Text("우회 $it", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold) }
                     savingText?.let { Text("동승자 $it", color = Hd.Mint, fontSize = 20.sp, fontWeight = FontWeight.Bold) }
@@ -192,5 +192,5 @@ fun NavOverlay(st: NavState, sim: Boolean, simAllowedOnly: Boolean, destName: St
 @Composable
 private fun SmallChip(text: String, onClick: () -> Unit) {
     Text(text, Modifier.clip(RoundedCornerShape(14.dp)).background(Hd.Card).clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 9.dp),
-        color = Hd.Purple, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        color = Hd.Purple, fontSize = 18.sp, fontWeight = FontWeight.Bold)
 }

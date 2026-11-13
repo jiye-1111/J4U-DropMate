@@ -24,7 +24,7 @@ fun RouteComparison(r: RecommendResult, routeKind: RouteOptionKind = RouteOption
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("같은 출발 조건으로 경로 비교", fontSize = 19.sp, fontWeight = FontWeight.Bold)
         Text("동승자 도착 우선 · 운전자 추가 직행의 30%(최대 15분) 이내 · 접근 도보 10분 이내",
-            color = Muted, fontSize = 12.sp)
+            color = Muted, fontSize = 15.sp)
         CompareCard("A · 동승자 혼자 대중교통",
             r.solo?.arrivalEpochSec?.let { minText((it - r.t0EpochSec).toInt()) } ?: "미확인",
             r.solo?.reason ?: "조회되지 않음", false,
@@ -46,10 +46,10 @@ fun RouteComparison(r: RecommendResult, routeKind: RouteOptionKind = RouteOption
         if (r.best != null) NaviHandoffCard(r)
         r.savingSec?.let {
             Text(if (it > 0) "동승자 단독 이동보다 ${it}초 빠름" else "단독 이동 대비 단축 없음",
-                color = Color(0xFF76B9FF), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                color = Color(0xFF76B9FF), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         }
         Text("TMAP 응답 기준 추정 · 실시간 대중교통 대기는 아직 검증되지 않았습니다.",
-            fontSize = 11.sp, color = Muted)
+            fontSize = 14.sp, color = Muted)
     }
 }
 
@@ -63,7 +63,7 @@ private fun PassengerRouteTabs(t0: Long, options: List<RouteOption>, selected: R
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF1C232D))
         .border(1.dp, Color(0xFF303B49), RoundedCornerShape(14.dp)).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("하차 후 동승자 경로", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text("하차 후 동승자 경로", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             RouteOptionKind.entries.forEach { k ->
                 val o = RouteOptions.pick(options, k)
@@ -73,12 +73,12 @@ private fun PassengerRouteTabs(t0: Long, options: List<RouteOption>, selected: R
                     .border(1.dp, if (on) kindColor(k) else Color(0xFF303B49), RoundedCornerShape(10.dp))
                     .then(if (o != null) Modifier.clickable { onSelect(k) } else Modifier)
                     .padding(horizontal = 8.dp, vertical = 6.dp)) {
-                    Text(k.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                    Text(k.label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
                         color = if (o == null) Muted else if (on) kindColor(k) else Color(0xFFF0F4FA))
                     Text(o?.itinerary?.arrivalEpochSec?.let { minText((it - t0).toInt()) } ?: "정보 없음",
-                        fontSize = 15.sp, fontWeight = FontWeight.Bold, color = if (o == null) Muted else Color(0xFFF0F4FA))
+                        fontSize = 18.sp, fontWeight = FontWeight.Bold, color = if (o == null) Muted else Color(0xFFF0F4FA))
                     o?.itinerary?.itinerary?.let { i ->
-                        Text("환승 ${i.transferCount?.let { "${it}회" } ?: "?"} · 도보 ${minText(i.totalWalkTimeSec)}", fontSize = 10.sp, color = Muted)
+                        Text("환승 ${i.transferCount?.let { "${it}회" } ?: "?"} · 도보 ${minText(i.totalWalkTimeSec)}", fontSize = 13.sp, color = Muted)
                     }
                 }
             }
@@ -87,16 +87,16 @@ private fun PassengerRouteTabs(t0: Long, options: List<RouteOption>, selected: R
             val it = o.itinerary.itinerary
             if (o.kinds.size > 1) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 o.kinds.forEach { k -> OptionBadge(k) }
-                Text("같은 경로", fontSize = 11.sp, color = Muted)
+                Text("같은 경로", fontSize = 14.sp, color = Muted)
             }
             Row(Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(4.dp)), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 it.legs.forEach { leg ->
                     Box(Modifier.weight((leg.sectionTimeSec ?: 1).coerceAtLeast(1).toFloat()).fillMaxHeight().background(Color(legArgb(leg))))
                 }
             }
-            it.legs.forEach { l -> Text("· " + legLabel(l), fontSize = 11.sp, color = Muted) }
+            it.legs.forEach { l -> Text("· " + legLabel(l), fontSize = 14.sp, color = Muted) }
         }
-        Text("★ 하차점 순위·추천은 최소시간 기준 · 탭은 경로 보기만 바꿉니다", fontSize = 10.sp, color = Muted)
+        Text("★ 하차점 순위·추천은 최소시간 기준 · 탭은 경로 보기만 바꿉니다", fontSize = 13.sp, color = Muted)
     }
 }
 
@@ -112,18 +112,18 @@ private fun DropPointComparison(r: RecommendResult) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF1C232D))
         .border(1.dp, Color(0xFF303B49), RoundedCornerShape(14.dp)).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("하차점 비교", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text("하차점 비교", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         r.dropRanking().forEach { d ->
             val c = d.candidate
             val isBest = r.best?.plan?.id == c.plan.id
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(d.rank?.let { if (isBest) "★ 1" else "$it" } ?: "–", fontWeight = FontWeight.Bold, fontSize = 13.sp,
+                    Text(d.rank?.let { if (isBest) "★ 1" else "$it" } ?: "–", fontWeight = FontWeight.Bold, fontSize = 16.sp,
                         color = if (isBest) Color(0xFF79BAFF) else Color(0xFFF0F4FA))
-                    Text(c.plan.label, Modifier.weight(1f), fontSize = 13.sp,
+                    Text(c.plan.label, Modifier.weight(1f), fontSize = 16.sp,
                         fontWeight = if (isBest) FontWeight.SemiBold else FontWeight.Normal)
                     Text(c.passengerArrivalEpochSec?.let { minText((it - r.t0EpochSec).toInt()) } ?: "—",
-                        fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
                 val detail = if (d.rank != null) listOfNotNull(
                     d.gapToBestSec?.takeIf { it > 0 }?.let { "1위보다 ${it}초 늦음" },
@@ -131,13 +131,13 @@ private fun DropPointComparison(r: RecommendResult) {
                     "도보 ${minText(c.totalWalkSec)}",
                     "환승 ${c.transferCount?.let { "${it}회" } ?: "미확인"}",
                 ).joinToString(" · ") else "${statusText(c.status)} · ${c.reason}"
-                Text(detail, fontSize = 11.sp, color = Muted)
-                Text("하차 지점: " + stopSuitabilityText(c.plan.stopSuitability), fontSize = 10.sp,
+                Text(detail, fontSize = 14.sp, color = Muted)
+                Text("하차 지점: " + stopSuitabilityText(c.plan.stopSuitability), fontSize = 13.sp,
                     color = if (c.plan.stopSuitability == StopSuitability.UNVERIFIED) Color(0xFFFFB74D) else Muted)
             }
         }
         Text("터널·고속도로 등 하차 불가 도로는 후보에서 제외 · 평가 후보 최대 ${Policy().maxCandidatesPerRequest}개(경로 중간·운전자 목적지·동승자 입구), 전역 최적 아님",
-            fontSize = 10.sp, color = Color(0xFFFFB74D))
+            fontSize = 13.sp, color = Color(0xFFFFB74D))
     }
 }
 
@@ -156,7 +156,7 @@ private fun statusText(s: CandStatus) = when (s) {
 @Composable
 private fun OptionBadge(k: RouteOptionKind) {
     val c = kindColor(k)
-    Text(k.label, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF10161E),
+    Text(k.label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF10161E),
         modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(c).padding(horizontal = 7.dp, vertical = 2.dp))
 }
 
@@ -169,11 +169,11 @@ private fun CompareCard(title: String, time: String, detail: String, selected: B
         .padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(title, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold,
-                color = if (selected) Color(0xFF79BAFF) else Color(0xFFF0F4FA), fontSize = 14.sp)
+                color = if (selected) Color(0xFF79BAFF) else Color(0xFFF0F4FA), fontSize = 17.sp)
             Text(time, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
-        if (transitEstimate) Text("예상 소요 · 실시간 대기 미검증", fontSize = 10.sp, color = Muted)
-        Text(detail, fontSize = 12.sp, color = Muted)
+        if (transitEstimate) Text("예상 소요 · 실시간 대기 미검증", fontSize = 13.sp, color = Muted)
+        Text(detail, fontSize = 15.sp, color = Muted)
         if (legs.isNotEmpty()) {
             Row(Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(4.dp)),
                 horizontalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -184,7 +184,7 @@ private fun CompareCard(title: String, time: String, detail: String, selected: B
             }
             Text(legs.joinToString(" → ") {
                 if (it.mode == LegMode.WALK) "도보" else "${legKind(it.mode)} ${it.route ?: "노선 미확인"}"
-            }, fontSize = 11.sp, color = Muted)
+            }, fontSize = 14.sp, color = Muted)
         }
     }
 }
