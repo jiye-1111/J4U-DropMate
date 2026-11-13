@@ -118,6 +118,7 @@ fun DriveScreen(vm: AppViewModel) {
     LaunchedEffect(r?.requestId) { step = if (r != null) Step.RECOMMEND else Step.INPUT }
     var routeKind by remember(r?.requestId) { mutableStateOf(RouteOptionKind.FASTEST) }
     var showDetail by remember(r?.requestId) { mutableStateOf(false) }
+    var showKeySettings by remember { mutableStateOf(false) }
     var guideMsg by remember(r?.requestId) { mutableStateOf<String?>(null) }
     val selected = r?.best?.routeOptions?.let { RouteOptions.pick(it, routeKind) }
     val passengerLegs = selected?.itinerary?.itinerary?.legs
@@ -263,6 +264,13 @@ fun DriveScreen(vm: AppViewModel) {
             }
             // 안내 중: 손으로 지도를 옮겨 따라가기가 멈췄을 때만 보이고, 누르면 차로 돌아가 다시 따라간다
             else if (MlHandle.followPaused) RecenterButton(Modifier.align(Alignment.CenterEnd).padding(end = 16.dp)) { MlHandle.followPaused = false }
+            // 2026-11-13 설정(TMAP 키 직접 입력): '내 위치로' 아래. 정차 중에만 열린다
+            if (step != Step.NAV) Text("설정", Modifier.align(Alignment.TopEnd).padding(top = 16.dp + 108.dp + 12.dp + 56.dp + 12.dp, end = 16.dp)
+                .size(56.dp).clip(CircleShape).background(Hd.Ink)
+                .clickable { if (driving.restricted) vm.message = "설정은 정차 중에만 열 수 있어요." else showKeySettings = true }
+                .wrapContentSize(), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            // 주행이 시작되면 자동으로 닫힌다
+            if (showKeySettings && !driving.restricted) TmapKeyDialog(vm) { showKeySettings = false }
             if (step != Step.NAV) LogoPill(Modifier.align(Alignment.TopStart).padding(start = 24.dp, top = 20.dp)) {
                 // 로고를 누르면 처음(입력)으로
                 vm.clearResult(); step = Step.INPUT
@@ -858,6 +866,44 @@ private fun HandoffCompact(r: RecommendResult, vm: AppViewModel, onGuide: (Strin
 }
 
 /** '내 위치로' 버튼(Quiet Companion v3): 남색 원형 56dp, 보라 조준점 아이콘. 운전 중 누르기 쉬운 크기 */
+/**
+ * TMAP 키 직접 입력. 입력한 키는 이 기기 안에만 저장하고 앞 4자리만 보여 준다.
+ * '지우기'를 누르면 앱 기본 키로 돌아간다. 경로 계산 로직은 그대로이고 쓰는 키만 바뀐다.
+ */
+@Composable
+private fun TmapKeyDialog(vm: AppViewModel, onClose: () -> Unit) {
+    var prefix by remember { mutableStateOf(vm.keys.userTmapKeyPrefix()) }
+    var input by remember { mutableStateOf("") }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose) {
+        Column(Modifier.width(520.dp).clip(RoundedCornerShape(24.dp)).background(Hd.Card).padding(28.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text("설정 · TMAP 키", color = Hd.Text, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text(if (prefix != null) "지금 쓰는 키: 직접 입력한 키 (${prefix}••••)" else "지금 쓰는 키: 앱 기본 키",
+                color = Hd.Navy, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("기본 키는 하루 호출 수가 적어요. 한도가 차면 본인 TMAP 앱 키를 넣어 주세요. 키는 이 기기 안에만 저장돼요.",
+                color = Hd.Sub, fontSize = 15.sp, lineHeight = 21.sp)
+            BasicTextField(input, { input = it.trim() }, singleLine = true,
+                textStyle = TextStyle(color = Hd.Text, fontSize = 20.sp), cursorBrush = SolidColor(Hd.Sky),
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                decorationBox = { inner ->
+                    Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Hd.Bg).border(1.dp, Hd.Stroke, RoundedCornerShape(14.dp))
+                        .padding(horizontal = 16.dp, vertical = 14.dp)) {
+                        if (input.isEmpty()) Text("TMAP 앱 키 붙여넣기", color = Hd.Muted, fontSize = 18.sp)
+                        inner()
+                    }
+                })
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.weight(1f)) { BigButton("저장", enabled = input.isNotBlank()) {
+                    vm.keys.setUserTmapKey(input); input = ""; prefix = vm.keys.userTmapKeyPrefix(); vm.message = null } }
+                Box(Modifier.weight(1f)) { BigButton("지우기", enabled = prefix != null, primary = false) {
+                    vm.keys.clearUserTmapKey(); prefix = null } }
+            }
+            Text("닫기", Modifier.align(Alignment.End).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClose).padding(horizontal = 14.dp, vertical = 8.dp),
+                color = Hd.Sub, fontSize = 18.sp)
+        }
+    }
+}
+
 @Composable
 private fun RecenterButton(modifier: Modifier, onClick: () -> Unit) {
     androidx.compose.foundation.Canvas(modifier.size(56.dp).clip(CircleShape).background(Hd.Ink).clickable(onClick = onClick)

@@ -130,7 +130,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 kotlinx.coroutines.delay(delayMs)
                 val key = keys.kakaoRestApiKey()
-                    ?: throw com.jiye.dropmate.data.PlaceSearchException("카카오 REST API 키가 설정되지 않았습니다.")
+                    ?: throw com.jiye.dropmate.data.PlaceSearchException("이 버전은 장소 이름 검색이 꺼져 있어요. '지도' 버튼을 누르고 지도를 찍어 정해 주세요.")
                 val response = kakaoSearch.search(key, query, page)
                 if (version != searchVersion) return@launch
                 kakaoPlaces = (if (page == 1) response.places else kakaoPlaces + response.places)
@@ -169,13 +169,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 버튼 한 번으로 실행: appKey·예산은 assets/api.properties(개발자 설정)에서 읽는다. 예산은 설정값이 바뀔 때 장부에 반영. */
     fun runConfigured() {
         ready()?.let { message = it; return }
-        val key = keys.tmapAppKey() ?: run { message = "TMAP appKey 가 설정되지 않았습니다. (개발자: assets/api.properties)"; return }
+        val key = keys.tmapAppKey() ?: run { message = "TMAP 키가 없습니다. 오른쪽 '설정'에서 본인 TMAP 키를 넣어 주세요."; return }
         // 예산 기준은 api.properties 하나: 값이 바뀌면 장부 잔여를 그 값으로 다시 설정, 비어 있으면 로컬 제한 해제(요청당 상한만 적용).
         ledger.applyConfiguredBudget(keys.budget())
         val rem = ledger.localRemaining()
         if (rem != null && rem < MIN_CALLS_TO_COMPARE) {
             // 기준 경로 2회(자동차 O→D + 단독 대중교통 O→P)도 못 하면 비교가 불가능하므로 호출하지 않고 바로 알린다.
-            message = "로컬 호출 예산 소진(남은 ${rem}회). api.properties 의 tmap.budget 을 다른 숫자로 바꾸면 그 값으로 다시 설정됩니다."
+            message = "기본 키의 호출 한도를 다 썼어요(남은 ${rem}회). 오른쪽 '설정'에서 본인 TMAP 키를 넣으면 계속 쓸 수 있어요."
             return
         }
         run(key, null)
@@ -206,7 +206,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             running = false
             if (gate.accept(r)) {
-                result = r; message = null
+                result = r; message = if (r.haltedBy == "QUOTA" || r.haltedBy == "AUTH") "TMAP 키 한도 초과 또는 사용 불가예요. 오른쪽 '설정'에서 본인 TMAP 키를 넣어 주세요." else null
                 saveDecisionLog(r)
             } else message = "이전 요청 결과는 표시하지 않습니다."
         }
@@ -319,7 +319,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val key = keys.tmapAppKey() ?: run { lastRouteError = "TMAP 키 없음"; return@withContext null }
         ledger.applyConfiguredBudget(keys.budget())
         val rem = ledger.localRemaining()
-        if (rem != null && rem <= 0) { lastRouteError = "로컬 호출 예산 소진"; return@withContext null }
+        if (rem != null && rem <= 0) { lastRouteError = "기본 키 호출 한도 소진 · 설정에서 본인 TMAP 키 입력"; return@withContext null }
         val now = System.currentTimeMillis() / 1000
         val dttm = TimeUtil.searchDttm(now)
         val res = TmapProvider(key, policy.callTimeoutMs).transit(from, dest, dttm)
@@ -348,7 +348,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val key = keys.tmapAppKey() ?: run { lastRouteError = "TMAP 키 없음"; return@withContext null }
         ledger.applyConfiguredBudget(keys.budget())
         val rem = ledger.localRemaining()
-        if (rem != null && rem <= 0) { lastRouteError = "로컬 호출 예산 소진(api.properties 의 tmap.budget)"; return@withContext null }
+        if (rem != null && rem <= 0) { lastRouteError = "기본 키 호출 한도 소진 · 설정에서 본인 TMAP 키 입력"; return@withContext null }
         val res = TmapProvider(key, policy.callTimeoutMs).carVia(from, via, dest)
         lastRouteError = when (res) { is ProviderResult.Fail -> "TMAP 조회 실패(${res.kind})"; is ProviderResult.NoRoute -> "경로 없음(${res.code})"; else -> null }
         val ok = res is ProviderResult.Ok
