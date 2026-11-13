@@ -89,7 +89,7 @@ fun DriveScreen(vm: AppViewModel) {
             fix = f
             // 사용자가 출발지를 직접 고르지 않았으면 차량 위치를 출발지로 쓴다
             val o = vm.places[Role.ORIGIN]
-            if (vm.result == null && (o == null || o.source == "pleos")) vm.setPlace(Role.ORIGIN, Place("차량 현재 위치 (Pleos)", f.pos, "pleos"))
+            if (vm.result == null && (o == null || o.source == "pleos")) vm.setAutoOrigin(Place("차량 현재 위치 (Pleos)", f.pos, "pleos"))
         }, { e -> locErr = e })
         onDispose { vloc.stop() }
     }
@@ -97,7 +97,7 @@ fun DriveScreen(vm: AppViewModel) {
     val pleosPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { g ->
         if (g.values.all { it }) { vloc.stop(); locErr = null; vloc.start({ f -> fix = f
             val o = vm.places[Role.ORIGIN]
-            if (vm.result == null && (o == null || o.source == "pleos")) vm.setPlace(Role.ORIGIN, Place("차량 현재 위치 (Pleos)", f.pos, "pleos")) }, { e -> locErr = e }) }
+            if (vm.result == null && (o == null || o.source == "pleos")) vm.setAutoOrigin(Place("차량 현재 위치 (Pleos)", f.pos, "pleos")) }, { e -> locErr = e }) }
         else locErr = "Pleos 위치 권한이 거부됐어요"
     }
     LaunchedEffect(Unit) {

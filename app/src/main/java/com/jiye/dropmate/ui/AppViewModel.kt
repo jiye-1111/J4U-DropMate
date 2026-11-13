@@ -70,6 +70,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setPlace(role: Role, p: Place) { clearSearch(); places = places + (role to p); picking = null; result = null }
 
+    /** 차량 위치가 갱신될 때 출발지만 조용히 바꾼다. 입력 중인 장소 검색·지도 선택은 건드리지 않는다(2026-11-13: 위치 갱신마다 검색 결과가 지워지던 문제). */
+    fun setAutoOrigin(p: Place) { places = places + (Role.ORIGIN to p) }
+
     @SuppressLint("MissingPermission")
     fun locateOrigin() {
         // Google Play 서비스 없는 기기(Pleos 등)에서도 동작하도록 플랫폼 LocationManager 의 마지막 위치만 사용한다.
@@ -148,6 +151,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 throw e
             } catch (e: Exception) {
                 if (version == searchVersion) {
+                    // 결과 목록 자리에 안내 문구가 보이도록 빈 결과로 둔다(카카오 키 없는 공개 APK 등)
+                    searchHits = role to emptyList()
                     searchNotice = (e as? com.jiye.dropmate.data.PlaceSearchException)?.userMessage
                         ?: "장소 검색에 실패했습니다. 다시 검색하세요."
                 }
