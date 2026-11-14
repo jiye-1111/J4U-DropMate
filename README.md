@@ -5,10 +5,12 @@
 | 항목 | 내용 |
 |---|---|
 | 앱 이름 | DropMate (운전자·동승자 하차 지점 추천) |
+| 한 줄 소개 | 운전자 경로는 그대로 두고, 함께 탄 동승자를 어디서 내려 줘야 서로 이득인지 실시간 교통·대중교통으로 비교해 하차 지점을 추천하는 차량용 앱 |
 | 패키지 | `com.jiye.dropmate` |
 | 시연 영상 | https://youtu.be/cq8AJrdYa48 (관악동부센트레빌 → 래미안원베일리, 동승자 아크로리버파크 · Pleos Connect 에뮬레이터) |
 | 실행 방법 | Android Studio에서 이 폴더를 열고 Gradle JDK를 21로 지정 → `gradlew -PpleosSdk=true :app:assembleRelease` → Pleos Connect 에뮬레이터에 설치·실행. `app/src/main/assets/api.properties`(양식: `api.properties.example`)에 TMAP 키가 있어야 경로 계산이 동작한다 |
 | 테스트 환경 | Windows 11, Android Studio, JDK 21, Gradle 8.11.1, AGP 8.7.3, Kotlin 2.0.21, compileSdk/targetSdk 35, **minSdk 28**(Pleos 요건) |
+| 필요한 설정 | APK(`apk/J4U_DropMate_release.apk`)는 키가 들어 있어 설치 후 바로 실행된다. 직접 빌드할 때는 `app/src/main/assets/api.properties`(양식 `api.properties.example`)에 TMAP 앱 키(필수)와 카카오 REST 키(장소 검색)를 넣고 `-PpleosSdk=true`로 빌드. 첫 실행 때 Pleos 차량 위치 권한 허용. TMAP 키 한도가 차면 앱 오른쪽 설정에서 본인 TMAP 키 입력 가능 |
 | 에뮬레이터 | Pleos Connect Emulator v2.1.0 (AVD `Pleos_Connect_v2.1.0`, API 34), 그래픽 Hardware(GPU) |
 | 화면 사양 | 2560×1440, 160dpi (Pleos Connect 에뮬레이터 AVD 설정 기준, 시스템 이미지 android-34 pleos_car_emulator x86_64) |
 | 팀명 | J4U (Journey for You) |
