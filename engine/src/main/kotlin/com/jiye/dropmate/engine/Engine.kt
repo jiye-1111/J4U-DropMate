@@ -123,12 +123,21 @@ data class RecommendResult(
     val notes: List<String>,
     /** 엔진이 쓴 운전자 목적지(차량 입구를 골랐으면 그 입구, 아니면 입력 좌표) */
     val driverDest: LatLng? = null,
+    /** 하차점 순위 기준(기본 최소 시간). withRankMode 로만 바꾼다. */
+    val rankMode: RankMode = RankMode.FASTEST,
 ) {
+    /** 순위 기준을 바꿔 1위·판정·절약시간을 다시 계산한다. 이미 받은 결과만 쓰며 TMAP 호출은 없다. */
+    fun withRankMode(mode: RankMode, rounding: MinuteRounding = MinuteRounding.ROUND): RecommendResult {
+        if (mode == rankMode) return this
+        val j = DropComparison.judge(candidates, solo, t0EpochSec, rounding, mode)
+        return copy(rankMode = mode, best = j.best, verdict = j.verdict, verdictReason = j.reason, savingSec = j.savingSec)
+    }
+
     /** 후보별 운전자 목적지(내비 안내 목적지): 문 앞 경유에서 다시 고른 입구 → 기본 운전자 입구 → 입력 좌표 */
     fun driverDestFor(c: CandidateResult?): LatLng? = c?.driverDestPos ?: driverDest
 
     /** 여러 하차점 비교(순위 대상 먼저, 그 외는 사유와 함께 뒤에). 선택 기준과 같은 정렬. */
-    fun dropRanking(rounding: MinuteRounding = MinuteRounding.ROUND): List<RankedDrop> = DropComparison.rank(candidates, rounding)
+    fun dropRanking(rounding: MinuteRounding = MinuteRounding.ROUND): List<RankedDrop> = DropComparison.rank(candidates, rounding, rankMode)
 }
 
 class DropMateEngine(
@@ -218,9 +227,9 @@ class DropMateEngine(
         results.firstOrNull { it.plan.type == CandidateType.P_VIA && it.driverDestLabel != null }?.let { notes += "P_VIA 운전자 입구: ${it.driverDestLabel}" }
         for (c in planned.filter { p -> selected.none { it.id == p.id } }) results += CandidateResult(c, CandStatus.NOT_QUERIED_BUDGET, "우선순위 밖 보류(요청당 후보 ${policy.maxCandidatesPerRequest}개 상한, 휴리스틱) — 경로 없음·제외 아님")
 
-        // 5. 순위 (시간 우선 모드)
+        // 5. 순위 (기본: 최소 시간)
         val rankable = results.filter { it.rankable }
-        val best = rankable.minWithOrNull(DropComparison.comparator(policy.rankRounding))
+        val best = rankable.minWithOrNull(DropComparison.comparator(policy.rankRounding, RankMode.FASTEST))
         val notQueried = results.count { it.status == CandStatus.NOT_QUERIED_BUDGET || it.status == CandStatus.NOT_QUERIED_HALTED }
         val undetermined = results.count { it.status in setOf(CandStatus.FAILED, CandStatus.ACCESS_WALK_UNKNOWN, CandStatus.WALK_DIRECT_UNRATED) }
         val scope = "평가 완료 ${rankable.size}개 / 계획 ${planned.size}개 (미조회 $notQueried, 미확정·실패 $undetermined) 중 가장 빠름 — 직행 경로 주변 ${policy.corridorStraightLimitM}m 후보 탐색, 경로 밖 우회 하차는 미탐색"
@@ -230,24 +239,9 @@ class DropMateEngine(
         notes += policy.walkDirectLimitSec?.let { if (it == WALK_DIRECT_NO_LIMIT) "도보 직행 한도 없음 — 동승자 도착 시간으로 비교, 대중교통이 너무 가까우면 TMAP 보행자 경로로 계산" else "도보 직행 한도: ${it}초 — 대중교통이 너무 가까우면 TMAP 보행자 경로로 계산" }
             ?: "도보 직행 한도 미확정: 도보만으로 가는 여정은 순위 미반영"
 
-        val verdict: Verdict; val reason: String; var saving: Long? = null
-        if (best == null) {
-            val anyIncomplete = results.any { it.status in setOf(CandStatus.FAILED, CandStatus.NOT_QUERIED_BUDGET, CandStatus.NOT_QUERIED_HALTED, CandStatus.ACCESS_WALK_UNKNOWN, CandStatus.WALK_DIRECT_UNRATED, CandStatus.NO_ROUTE) }
-            if (anyIncomplete || results.isEmpty()) { verdict = Verdict.INCOMPLETE; reason = "INCOMPLETE: 평가 완료 후보 없음(실패·미조회·미확정 포함)" }
-            else {
-                verdict = Verdict.NO_CANDIDATE
-                reason = if (results.all { it.status == CandStatus.EXCLUDED_DETOUR }) "NO_CANDIDATE.DETOUR_LIMIT" else "NO_CANDIDATE.WALK_LIMIT"
-            }
-        } else if (solo.arrivalEpochSec == null) {
-            verdict = Verdict.INCOMPLETE
-            reason = if (solo.status == CandStatus.NO_ROUTE) "INCOMPLETE.SOLO_NO_ROUTE: 단독 대중교통 경로 없음 — 동승 경로만 표시, 절약시간 미계산"
-            else "INCOMPLETE.SOLO_MISSING: 단독 경로를 확인하지 못함(이동 불가로 단정하지 않음)"
-        } else {
-            saving = solo.arrivalEpochSec - best.passengerArrivalEpochSec!!
-            verdict = when { saving >= 180 -> Verdict.RECOMMEND; saving > 0 -> Verdict.SIMILAR; else -> Verdict.NO_GAIN }
-            reason = "단독 대비 ${saving}초 (원본 초 단위 비교)"
-        }
-        return result(verdict, reason, base, solo, results, pfCounts, best, saving, scope, provisional)
+        // 2026-11-14: 판정·순위는 DropComparison.judge 하나로(기본 최소 시간). 화면에서 최소 환승으로 바꾸면 같은 결과로 다시 판정한다(호출 없음).
+        val j = DropComparison.judge(results, solo, req.t0EpochSec, policy.rankRounding, RankMode.FASTEST)
+        return result(j.verdict, j.reason, base, solo, results, pfCounts, j.best, j.savingSec, scope, provisional)
     }
 
     private fun evalSolo(req: RecommendRequest, gw: CallGateway): SoloResult {

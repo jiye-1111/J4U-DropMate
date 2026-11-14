@@ -117,6 +117,8 @@ fun DriveScreen(vm: AppViewModel) {
     var step by remember { mutableStateOf(Step.INPUT) }
     LaunchedEffect(r?.requestId) { step = if (r != null) Step.RECOMMEND else Step.INPUT }
     var routeKind by remember(r?.requestId) { mutableStateOf(RouteOptionKind.FASTEST) }
+    // 순위 기준을 바꾸면 하차 후 경로 탭도 같은 기준으로 맞춘다
+    LaunchedEffect(r?.requestId, r?.rankMode) { routeKind = if (r?.rankMode == RankMode.FEWEST_TRANSFERS) RouteOptionKind.FEWEST_TRANSFERS else RouteOptionKind.FASTEST }
     var showDetail by remember(r?.requestId) { mutableStateOf(false) }
     var showKeySettings by remember { mutableStateOf(false) }
     var guideMsg by remember(r?.requestId) { mutableStateOf<String?>(null) }
@@ -310,7 +312,7 @@ fun DriveScreen(vm: AppViewModel) {
                                 else -> "내 위치: 기기 위치 사용"
                             }, color = Hd.Muted, fontSize = 16.sp)
                         }
-                        Step.RECOMMEND -> r?.let { RecommendStep(it, { step = Step.OPTIONS }, { vm.clearResult(); step = Step.INPUT }, showDetail) { showDetail = !showDetail } }
+                        Step.RECOMMEND -> r?.let { RecommendStep(it, { step = Step.OPTIONS }, { vm.clearResult(); step = Step.INPUT }, showDetail, { m -> vm.setRankMode(m) }) { showDetail = !showDetail } }
                         Step.OPTIONS -> r?.let { OptionsStep(it, routeKind, { routeKind = it }, vm, navSession != null,
                             // Pleos 내장 내비로 이미 안내 중이면(guideMsg) DropMate 음성은 꺼서 겹치지 않게
                             onNav = { sim, simOnly -> navSim = sim; navSimOnly = simOnly; navState = null; driveOnly = false
@@ -493,23 +495,33 @@ private fun mins(sec: Long?): String = sec?.let { "${(kotlin.math.abs(it) + 30) 
 private fun hhmm(epoch: Long?): String = epoch?.let { SimpleDateFormat("HH:mm", Locale.KOREA).format(Date(it * 1000)) } ?: "—"
 
 @Composable
-private fun RecommendStep(r: RecommendResult, onOptions: () -> Unit, onReset: () -> Unit, showDetail: Boolean, toggleDetail: () -> Unit) {
+private fun RecommendStep(r: RecommendResult, onOptions: () -> Unit, onReset: () -> Unit, showDetail: Boolean, onMode: (RankMode) -> Unit, toggleDetail: () -> Unit) {
     val b = r.best
     val title = when (r.verdict) {
         Verdict.RECOMMEND -> "어디서 내리면 좋을까요?"
         Verdict.SIMILAR -> "함께 가도 차이가 거의 없어요"
-        Verdict.NO_GAIN -> "이번엔 따로 가는 게 더 빨라요"
+        Verdict.NO_GAIN -> if (r.rankMode == RankMode.FEWEST_TRANSFERS) "이번엔 따로 가는 게 더 편해요" else "이번엔 따로 가는 게 더 빨라요"
         Verdict.NO_CANDIDATE -> "조건에 맞는 하차점이 없어요"
         Verdict.INCOMPLETE -> "비교를 끝내지 못했어요"
+    }
+    // 2026-11-14 순위 기준 탭: 이미 받은 결과만 다시 정렬(TMAP 호출 없음)
+    Row(Modifier.clip(RoundedCornerShape(18.dp)).background(Hd.Card).padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        RankMode.entries.forEach { m ->
+            val on = r.rankMode == m
+            Text(m.label, Modifier.clip(RoundedCornerShape(14.dp)).background(if (on) Hd.Purple else Color.Transparent)
+                .clickable { if (!on) onMode(m) }.padding(horizontal = 22.dp, vertical = 12.dp),
+                color = if (on) Color.White else Hd.Sub, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        }
     }
     // 머리말 카드
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Hd.Card).padding(22.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(title, color = Hd.Text, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         // 2026-11-13 사용자: 시간대마다 결과가 달라지므로 '현재 교통 기준'과 조회 시각을 함께 보여 준다
-        Text(if (b != null) "조회한 후보 중 추천 · 현재 교통 기준 ${hhmm(r.t0EpochSec)} 조회" else r.verdictReason, color = Hd.Sub, fontSize = 18.sp)
+        Text(if (b != null) "${r.rankMode.label} 기준 추천 · 현재 교통 기준 ${hhmm(r.t0EpochSec)} 조회" else r.verdictReason, color = Hd.Sub, fontSize = 18.sp)
     }
     val ranked = r.dropRanking().filter { it.rank != null }
-    fun saveOf(c: CandidateResult) = r.solo?.arrivalEpochSec?.let { s -> c.passengerArrivalEpochSec?.let { s - it } }
+    val soloKey = r.solo?.let { DropComparison.soloKey(it, r.t0EpochSec, r.rankMode) }
+    fun saveOf(c: CandidateResult) = soloKey?.let { s -> s.arrival - DropComparison.key(c, r.rankMode).arrival }
     if (b != null) {
         // 01 추천 하차점(어두운 카드)
         val sv = r.savingSec
@@ -535,6 +547,9 @@ private fun RecommendStep(r: RecommendResult, onOptions: () -> Unit, onReset: ()
                 Text("운전자 허용 우회 ${direct?.let { mins(Policy().allowedDetourSec(it).toLong()) } ?: "미확인"} 이내" + (pct?.let { " · 직행보다 $it% 더" } ?: "") + if (b.nearLimit) " · 허용치에 가까움" else "",
                     color = if (b.nearLimit) Color(0xFFFFD08A) else Color(0xFFB9BACB), fontSize = 16.sp)
             }
+            val bk = DropComparison.key(b, r.rankMode)
+            Text("동승자 환승 ${bk.transfers?.let { "${it}회" } ?: "미확인"}" + (soloKey?.transfers?.let { " · 혼자 가면 ${it}회" } ?: ""),
+                color = Color(0xFFB9BACB), fontSize = 16.sp)
         }
         // 02 다른 하차점
         ranked.filter { it.candidate.plan.id != b.plan.id }.take(2).forEachIndexed { i, d ->
@@ -543,7 +558,7 @@ private fun RecommendStep(r: RecommendResult, onOptions: () -> Unit, onReset: ()
                 Text("0${i + 2}  다른 하차점", color = Hd.Purple, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 Text(c.plan.label.replace(" 인근 경로상 하차", " 근처").replace("운전자 목적지까지 동승 후 이동", "운전자 목적지"),
                     color = Hd.Text, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("우회 +${mins(c.driverAddSec?.toLong())} · 동승자 " + (s2?.let { if (it > 0) "${mins(it)} 절약" else "${mins(it)} 늦음" } ?: "미확인"),
+                Text("우회 +${mins(c.driverAddSec?.toLong())} · 동승자 " + (s2?.let { if (it > 0) "${mins(it)} 절약" else "${mins(it)} 늦음" } ?: "미확인") + (DropComparison.key(c, r.rankMode).transfers?.let { " · 환승 ${it}회" } ?: ""),
                     color = Hd.Sub, fontSize = 18.sp)
             }
         }
@@ -566,7 +581,7 @@ private fun CompareBar(r: RecommendResult, mod: Modifier, onOptions: () -> Unit)
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
         Column {
             Text("각자의 시간을 함께 비교해요", color = Hd.Sub, fontSize = 17.sp)
-            Text("단독 이동 ${rel(r.solo?.arrivalEpochSec)}  →  함께 이동 ${rel(b.passengerArrivalEpochSec)}", color = Hd.Text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("단독 이동 ${rel(r.solo?.let { DropComparison.soloKey(it, r.t0EpochSec, r.rankMode)?.arrival })}  →  함께 이동 ${rel(DropComparison.key(b, r.rankMode).arrival)}", color = Hd.Text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
         Text("하차 후 경로 보기", Modifier.clip(RoundedCornerShape(18.dp)).background(Hd.Purple).clickable(onClick = onOptions)
             .padding(horizontal = 22.dp, vertical = 16.dp), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)

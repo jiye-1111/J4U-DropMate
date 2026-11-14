@@ -370,6 +370,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 결과를 지우고 입력 화면으로(입력값은 유지) */
     fun clearResult() { result = null; message = null }
 
+    /** 하차점 순위 기준 바꾸기(최소 시간/최소 환승). 이미 받은 결과만 다시 정렬하며 TMAP 호출은 없다. */
+    fun setRankMode(m: RankMode) { result = result?.withRankMode(m, policy.rankRounding) }
+
     /** 경로 판단 과정을 decision_log.md 로 자동 저장(키·API 원문 제외). */
     private fun saveDecisionLog(r: RecommendResult) {
         val snapshot = places.map { (role, p) -> role.title to ((p.label + (p.address?.let { " — $it" } ?: "")) to p.pos) }.toMap()

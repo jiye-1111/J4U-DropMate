@@ -2,8 +2,8 @@ package com.jiye.dropmate.engine
 
 /**
  * 같은 하차점(같은 대중교통 조회 결과) 안에서 고르는 경로 기준.
- * 하차점 간 순위·추천 판정은 계속 FASTEST(동승자 최종 도착)만 사용한다.
- * FEWEST_TRANSFERS·LEAST_WALK 는 같은 하차점의 참고 선택지이며 순위 근거가 아니다.
+ * 하차점 간 순위는 RankMode(최소 시간/최소 환승, DropComparison)로 정한다(2026-11-14).
+ * 최소 환승 모드에서는 각 하차점의 FEWEST_TRANSFERS 여정으로 비교한다. LEAST_WALK 는 참고 선택지.
  */
 enum class RouteOptionKind(val label: String) {
     FASTEST("최소시간"),
