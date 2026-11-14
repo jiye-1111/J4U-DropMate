@@ -102,15 +102,20 @@ private fun bubbleBitmap(d: Float, text: String, bg: Int, fg: Int, tail: Boolean
     return bmp
 }
 
-/** 내 차 화살표(지도 회전과 함께 돌도록 iconRotate=bearing, map 정렬) */
+/** 내 차(위에서 본 자동차, 앞이 위쪽). 지도 회전과 함께 돌도록 iconRotate=bearing, map 정렬. 2026-11-14 화살표 → 차 모양 */
 private fun carBitmap(d: Float): Bitmap {
-    val s = (60 * d).toInt()
+    val w = (34 * d); val h = (60 * d); val s = (68 * d).toInt()
     val bmp = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
     val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    p.color = 0x336552D9; c.drawCircle(s / 2f, s / 2f, s * 0.48f, p)
-    p.color = android.graphics.Color.WHITE; c.drawCircle(s / 2f, s / 2f, s * 0.36f, p)
-    p.color = 0xFF6552D9.toInt()
-    c.drawPath(Path().apply { moveTo(s / 2f, s * 0.16f); lineTo(s * 0.76f, s * 0.78f); lineTo(s / 2f, s * 0.62f); lineTo(s * 0.24f, s * 0.78f); close() }, p)
+    val l = (s - w) / 2f; val t = (s - h) / 2f
+    p.color = 0x40000000; c.drawRoundRect(android.graphics.RectF(l + 2 * d, t + 3 * d, l + w + 2 * d, t + h + 3 * d), 10 * d, 10 * d, p) // 그림자
+    p.color = 0xFF6552D9.toInt(); c.drawRoundRect(android.graphics.RectF(l, t, l + w, t + h), 10 * d, 10 * d, p) // 차체
+    p.color = 0xFFDCE6F5.toInt()
+    c.drawRoundRect(android.graphics.RectF(l + 5 * d, t + 12 * d, l + w - 5 * d, t + 24 * d), 4 * d, 4 * d, p) // 앞 유리
+    c.drawRoundRect(android.graphics.RectF(l + 6 * d, t + h - 15 * d, l + w - 6 * d, t + h - 7 * d), 3 * d, 3 * d, p) // 뒤 유리
+    p.color = 0xFFFFF4B0.toInt(); c.drawCircle(l + 7 * d, t + 4 * d, 3 * d, p); c.drawCircle(l + w - 7 * d, t + 4 * d, 3 * d, p) // 전조등
+    p.color = android.graphics.Color.WHITE; p.style = Paint.Style.STROKE; p.strokeWidth = 2 * d
+    c.drawRoundRect(android.graphics.RectF(l, t, l + w, t + h), 10 * d, 10 * d, p)
     return bmp
 }
 
@@ -286,9 +291,14 @@ fun MapLibrePane(
             }
         }
     }
+    // 2026-11-14: 카메라 방향은 경로 꺾임에서 한 번에 돌지 않도록 조금씩 따라 돈다(모의 주행 0.1초 갱신과 함께 부드럽게)
+    val camBearing = remember { doubleArrayOf(Double.NaN) }
     LaunchedEffect(m, nav, MlHandle.followPaused) {
         if (m == null || nav == null || MlHandle.followPaused) return@LaunchedEffect
-        val cam = if (nav.tilt) CameraPosition.Builder().target(nav.car.ml()).zoom(17.0).bearing(nav.bearing).tilt(55.0)
+        val prev = camBearing[0]
+        val brg = if (prev.isNaN()) nav.bearing else prev + ((((nav.bearing - prev) % 360.0) + 540.0) % 360.0 - 180.0) * 0.3
+        camBearing[0] = brg
+        val cam = if (nav.tilt) CameraPosition.Builder().target(nav.car.ml()).zoom(17.0).bearing(brg).tilt(55.0)
             // 위쪽 여백을 크게 줘서 차가 화면 아래쪽에 오고 앞길이 넓게 보이게
             .padding(0.0, mapView.height * 0.42, 0.0, 0.0).build()
         else CameraPosition.Builder().target(nav.car.ml()).zoom(16.5).bearing(0.0).tilt(0.0).padding(0.0, 0.0, 0.0, 0.0).build()

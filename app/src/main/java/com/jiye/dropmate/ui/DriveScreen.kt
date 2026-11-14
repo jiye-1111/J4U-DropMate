@@ -73,6 +73,10 @@ object Hd {
 
 private enum class Step { INPUT, RECOMMEND, OPTIONS, GUIDE, NAV }
 
+/** 모의 주행 배속과 갱신 간격(2026-11-14: 8배속·0.5초 → 4배속·0.1초, 부드럽게) */
+private const val SIM_SPEED = 4.0
+private const val SIM_TICK_MS = 100L
+
 @Composable
 fun DriveScreen(vm: AppViewModel) {
     val ctx = LocalContext.current
@@ -123,7 +127,7 @@ fun DriveScreen(vm: AppViewModel) {
     val selected = r?.best?.routeOptions?.let { RouteOptions.pick(it, routeKind) }
     val passengerLegs = selected?.itinerary?.itinerary?.legs
 
-    // 앱 안 길안내: TMAP 자동차 경로의 안내점으로 회전 안내. sim=true 는 시연용 모의 주행(경로 구간 시간을 8배속으로 진행)
+    // 앱 안 길안내: TMAP 자동차 경로의 안내점으로 회전 안내. sim=true 는 시연용 모의 주행(경로 구간 시간을 SIM_SPEED 배속, 0.1초 간격으로 진행)
     var navSession by remember(r?.requestId) { mutableStateOf(r?.let { NavSession.from(it) }) }
     var navSim by remember(r?.requestId) { mutableStateOf(true) }
     var navSimOnly by remember(r?.requestId) { mutableStateOf(false) }
@@ -183,7 +187,8 @@ fun DriveScreen(vm: AppViewModel) {
             while (true) {
                 val st = ns.stateAt(ns.distAtTime(t)); onNavState(st)
                 if (st.arrived) break
-                delay(500); t += 4.0 // 0.5초마다 경로 시간 4초 진행(8배속)
+                // 2026-11-14: 0.1초마다 조금씩(SIM_SPEED 배속) 진행해 끊김 없이 이동
+                delay(SIM_TICK_MS); t += SIM_SPEED * SIM_TICK_MS / 1000.0
             }
         } else {
             var offSince = 0L; var lastReroute = 0L
