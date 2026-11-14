@@ -147,7 +147,7 @@ object EngineChecks {
             driverArrivalEpochSec = dArr, passengerArrivalEpochSec = pArr, totalWalkSec = walk)
 
     val dropComparisonChecks: List<Pair<String, () -> Unit>> = listOf(
-        "여러 하차점: 분 반올림 → 환승 → 함께 탄 시간 → 보행 → ID 순(운전자 도착은 순위에 안 씀), 순위 외 후보는 사유 보존해 뒤로" to {
+        "여러 하차점: 분 반올림 → 운전자 도착 → 보행 → ID 순, 순위 외 후보는 사유 보존해 뒤로" to {
             val list = listOf(
                 cand("M-c", CandStatus.EVALUATED, T0 + 1800, T0 + 1100),
                 cand("M-a", CandStatus.EXCLUDED_DETOUR, null, T0 + 2000),
@@ -156,8 +156,8 @@ object EngineChecks {
                 cand("M-e", CandStatus.NOT_QUERIED_BUDGET, null, null),
             )
             val r = DropComparison.rank(list, MinuteRounding.ROUND)
-            eq(r.map { it.candidate.plan.id to it.rank }, listOf("M-d" to 1, "M-b" to 2, "M-c" to 3, "M-a" to null, "M-e" to null), "순서")
-            eq(r.map { it.gapToBestSec }, listOf(0L, 289L, 300L, null, null), "1위 대비 원본 초 차이")
+            eq(r.map { it.candidate.plan.id to it.rank }, listOf("M-d" to 1, "M-c" to 2, "M-b" to 3, "M-a" to null, "M-e" to null), "순서")
+            eq(r.map { it.gapToBestSec }, listOf(0L, 300L, 289L, null, null), "1위 대비 원본 초 차이")
             eq(r[3].candidate.reason, "합성 M-a", "제외 사유 보존")
         },
         "여러 하차점: 순위 대상이 없으면 전부 순위 없음" to {
@@ -477,7 +477,7 @@ object EngineChecks {
             eq(dd.passengerArrivalEpochSec, TimeUtil.ceilToMinute(T0 + 1000 + 60) + 420, "도착 = 하차 + 도보 420초")
             check(prov.calls.any { it.startsWith("WALK") }, "보행자 경로 1회")
         },
-        "순위(최소 시간): 동승자 도착(분) → 환승 → 더 멀리 함께 감, 운전자 우회는 안 씀(2026-11-14 사용자 확정)" to {
+        "순위(최소 시간, 원래 규칙): 동승자 도착(분) → 운전자 우회(분) → 환승 → 더 멀리 함께 감(2026-11-12 확정, 11-14 유지)" to {
             fun cand(id: String, drop: Long, walk: Int) = CandidateResult(
                 PlannedCandidate(id, CandidateType.MIDDLE, O, id, (drop - T0).toDouble(), null, null, GtfsLink.DIRECT, 0, PrefilterState.QUERY_TARGET, id, 0.0),
                 CandStatus.EVALUATED, "합성", dropCompleteEpochSec = drop, driverAddSec = 60, driverArrivalEpochSec = T0 + 1060,
@@ -488,11 +488,11 @@ object EngineChecks {
             eq(listOf(near, farLate).sortedWith(DropComparison.comparator(MinuteRounding.ROUND)).first().plan.id, "A-near", "동승자 도착 분이 다르면 도착 우선")
             val farMoreTr = far.copy(transferCount = 2); val nearTr = near.copy(transferCount = 1)
             eq(listOf(nearTr, farMoreTr).sortedWith(DropComparison.comparator(MinuteRounding.ROUND)).first().plan.id, "A-near", "환승이 적은 쪽이 함께 탄 시간보다 먼저")
-            // 한도 안 운전자 우회는 순위에 쓰지 않는다: 우회가 더 커도 같은 조건이면 더 오래 함께 탄 쪽
+            // 최소 시간은 원래 규칙: 도착 분이 같으면 운전자 우회가 적은 쪽
             val farBigDetour = far.copy(driverAddSec = 800, driverArrivalEpochSec = T0 + 1800)
-            eq(listOf(near, farBigDetour).sortedWith(DropComparison.comparator(MinuteRounding.ROUND)).first().plan.id, "B-far", "운전자 우회 차이는 무시")
+            eq(listOf(near, farBigDetour).sortedWith(DropComparison.comparator(MinuteRounding.ROUND)).first().plan.id, "A-near", "운전자 우회 적은 쪽")
         },
-        "순위(최소 환승): 환승 적은 순 → 도착 → 함께 탄 시간, 하차점 안의 최소 환승 여정으로 비교(2026-11-14)" to {
+        "순위(최소 환승): 환승 적은 순 → 도착 → 운전자 우회 → 함께 탄 시간, 하차점 안의 최소 환승 여정으로 비교(2026-11-14)" to {
             fun ev(i: Int, arr: Long, tr: Int) = EvaluatedItinerary(i, itin((arr - T0).toInt(), 100, transfers = tr), arr, CandStatus.EVALUATED, "합성")
             fun cand(id: String, drop: Long, evs: List<EvaluatedItinerary>): CandidateResult {
                 val fast = evs.minBy { it.arrivalEpochSec!! }
@@ -561,8 +561,8 @@ object EngineChecks {
             }
             check(eng.selectForEvaluation(plan, base).any { it.type == CandidateType.D_DROP } && eng.selectForEvaluation(plan, base).any { it.type == CandidateType.P_VIA }, "D·P 항상 포함")
         },
-        "판정 경계: 절약 179/180/0/-60초(같은 분이면 함께 가는 쪽이 앞섬)" to {
-            for ((sv, expect) in listOf(179L to Verdict.SIMILAR, 180L to Verdict.RECOMMEND, 0L to Verdict.SIMILAR, -60L to Verdict.NO_GAIN)) {
+        "판정 경계: 절약 179/180/0/-60초(최소 시간 원래 규칙)" to {
+            for ((sv, expect) in listOf(179L to Verdict.SIMILAR, 180L to Verdict.RECOMMEND, 0L to Verdict.NO_GAIN, -60L to Verdict.NO_GAIN)) {
                 val P = LatLng(37.45, 127.10)
                 val dropD = T0 + 1000 + 60
                 val arrD = TimeUtil.ceilToMinute(dropD) + 1200
