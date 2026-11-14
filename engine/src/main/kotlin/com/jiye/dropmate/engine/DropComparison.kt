@@ -13,7 +13,7 @@ package com.jiye.dropmate.engine
  */
 enum class RankMode(val label: String) {
     FASTEST("최소 시간"),
-    STAY_LONGER("오래 같이 타기"),
+    STAY_LONGER("최소 환승수"), // 2026-11-14 15:54 이름만 변경(규칙은 8분 안 같이 오래 타는 순 그대로)
 }
 
 /** 오래 같이 타기 허용 범위(초): 최소 시간 1위 대비 동승자 도착 지연·운전자 추가 증가 각각 이 값 이내(2026-11-14 15:21 사용자 결정 8분) */
