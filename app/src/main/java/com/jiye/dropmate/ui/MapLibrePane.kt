@@ -46,6 +46,7 @@ object MlHandle {
     /** 2026-11-13: 사용자가 손으로 지도를 옮기면 true → 안내 중 차 따라가기를 멈추고 '내 위치로' 버튼을 보인다 */
     var followPaused by mutableStateOf(false)
     fun set(m: MapLibreMap) { ref = java.lang.ref.WeakReference(m) }
+    val map: MapLibreMap? get() = ref?.get()
     fun zoomIn() { ref?.get()?.animateCamera(CameraUpdateFactory.zoomIn()) }
     fun zoomOut() { ref?.get()?.animateCamera(CameraUpdateFactory.zoomOut()) }
     /** '내 위치로': 지도를 옮겨 보다가 누르면 차 위치(없으면 출발지)로 카메라를 되돌린다. 왼쪽 떠 있는 패널(폭 42%)에 가리지 않게 */
@@ -129,7 +130,25 @@ fun MapLibrePane(
     val mapView = remember {
         MapLibre.getInstance(ctx.applicationContext)
         // TextureView 모드: SurfaceView 는 Compose 패널·버튼 위로 그려져 화면을 가리므로 사용하지 않는다
-        MapView(ctx, org.maplibre.android.maps.MapLibreMapOptions.createFromAttributes(ctx).textureMode(true)).also { it.onCreate(null) }
+        // 2026-11-14 사용자 요청: 마우스 휠 = 커서 위치 기준 확대·축소(입력당 1단계)만, 지도 이동은 드래그.
+        // 휠 이벤트를 여기서 소비해 지도가 위아래로 밀리거나 바깥 화면으로 넘어가지 않게 한다.
+        object : MapView(ctx, org.maplibre.android.maps.MapLibreMapOptions.createFromAttributes(ctx).textureMode(true)) {
+            override fun dispatchGenericMotionEvent(event: android.view.MotionEvent): Boolean {
+                if (event.actionMasked == android.view.MotionEvent.ACTION_SCROLL) {
+                    val v = event.getAxisValue(android.view.MotionEvent.AXIS_VSCROLL)
+                    val mm = MlHandle.map
+                    if (mm != null && v.isFinite() && v != 0f) {
+                        mm.cancelTransitions()
+                        val dz = if (v > 0) 1.0 else -1.0
+                        mm.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.zoomBy(dz, android.graphics.Point(event.x.toInt(), event.y.toInt())))
+                        // 안내 중이면 따라가기를 멈춰 확대 상태 유지('내 위치로'로 다시 따라감)
+                        MlHandle.followPaused = true
+                    }
+                    return true
+                }
+                return super.dispatchGenericMotionEvent(event)
+            }
+        }.also { it.onCreate(null) }
     }
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var style by remember { mutableStateOf<Style?>(null) }
