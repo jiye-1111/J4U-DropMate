@@ -492,21 +492,22 @@ object EngineChecks {
             val farBigDetour = far.copy(driverAddSec = 800, driverArrivalEpochSec = T0 + 1800)
             eq(listOf(near, farBigDetour).sortedWith(DropComparison.comparator(MinuteRounding.ROUND)).first().plan.id, "A-near", "운전자 우회 적은 쪽")
         },
-        "순위(오래 같이 타기): 최소 시간 1위 대비 동승자 +5분·운전자 +5분 이내 중 같이 타는 시간 긴 순, 범위 밖은 뒤에(2026-11-14)" to {
+        "순위(오래 같이 타기): 최소 시간 1위 대비 동승자 +8분·운전자 +8분 이내 중 같이 타는 시간 긴 순, 범위 밖은 뒤에(2026-11-14)" to {
             fun cand(id: String, drop: Long, pArr: Long, add: Int) = CandidateResult(
                 PlannedCandidate(id, CandidateType.MIDDLE, O, id, (drop - T0).toDouble(), null, null, GtfsLink.DIRECT, 0, PrefilterState.QUERY_TARGET, id, 0.0),
                 CandStatus.EVALUATED, "합성", dropCompleteEpochSec = drop, driverAddSec = add, driverArrivalEpochSec = T0 + 1000 + add,
                 passengerArrivalEpochSec = pArr, totalWalkSec = 300, transferCount = 0)
             val near = cand("A-near", T0 + 120, T0 + 1500, 60)          // 최소 시간 1위(25분, 우회 1분), 2분 같이 탐
             val mid = cand("B-mid", T0 + 600, T0 + 1680, 200)           // +3분, 우회 +140초 → 범위 안, 10분 같이 탐
-            val far = cand("C-far", T0 + 900, T0 + 1860, 300)           // +6분 → 범위 밖(동승자)
-            val farDetour = cand("D-detour", T0 + 1000, T0 + 1700, 420) // 우회 +360초 → 범위 밖(운전자)
-            val list = listOf(near, mid, far, farDetour)
+            val far = cand("C-far", T0 + 900, T0 + 2100, 300)           // +10분 → 범위 밖(동승자)
+            val farDetour = cand("D-detour", T0 + 1000, T0 + 1700, 600) // 우회 +540초 → 범위 밖(운전자)
+            val in8 = cand("E-in8", T0 + 800, T0 + 1950, 500)           // +7분 30초, 우회 +440초 → 8분 안, 가장 오래 같이 탐
+            val list = listOf(near, mid, far, farDetour, in8)
             eq(DropComparison.rank(list, MinuteRounding.ROUND, RankMode.FASTEST).first().candidate.plan.id, "A-near", "최소 시간 1위")
             val s = DropComparison.rank(list, MinuteRounding.ROUND, RankMode.STAY_LONGER)
-            eq(s.map { it.candidate.plan.id }, listOf("B-mid", "A-near", "D-detour", "C-far"), "범위 안은 같이 오래 탄 순, 범위 밖은 최소 시간 순")
+            eq(s.map { it.candidate.plan.id }, listOf("E-in8", "B-mid", "A-near", "D-detour", "C-far"), "범위 안은 같이 오래 탄 순, 범위 밖은 최소 시간 순")
             eq(s.first().gapToBestSec, 0L, "1위 차이 0")
-            check(STAY_LONGER_TOLERANCE_SEC == 300L, "허용 5분")
+            check(STAY_LONGER_TOLERANCE_SEC == 480L, "허용 8분")
         },
         "판정(오래 같이 타기): 판정은 최소 시간 그대로, 1위만 바뀌고 탭 전환은 호출 0" to {
             val P = LatLng(37.45, 127.10)
