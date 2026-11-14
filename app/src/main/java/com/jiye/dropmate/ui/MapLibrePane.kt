@@ -103,20 +103,15 @@ private fun bubbleBitmap(d: Float, text: String, bg: Int, fg: Int, tail: Boolean
     return bmp
 }
 
-/** 내 차(위에서 본 자동차, 앞이 위쪽). 지도 회전과 함께 돌도록 iconRotate=bearing, map 정렬. 2026-11-14 화살표 → 차 모양 */
+/** 내 차: 내비식 진행 방향 화살표(쉐브론, 보라 + 흰 테두리). 지도에 눕혀(pitch=map) 진행 방향으로 회전. 2026-11-14 사용자 요청 */
 private fun carBitmap(d: Float): Bitmap {
-    val w = (34 * d); val h = (60 * d); val s = (68 * d).toInt()
+    val s = (64 * d).toInt()
     val bmp = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
+    val path = Path().apply { moveTo(s / 2f, s * 0.08f); lineTo(s * 0.86f, s * 0.88f); lineTo(s / 2f, s * 0.68f); lineTo(s * 0.14f, s * 0.88f); close() }
     val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    val l = (s - w) / 2f; val t = (s - h) / 2f
-    p.color = 0x40000000; c.drawRoundRect(android.graphics.RectF(l + 2 * d, t + 3 * d, l + w + 2 * d, t + h + 3 * d), 10 * d, 10 * d, p) // 그림자
-    p.color = 0xFF6552D9.toInt(); c.drawRoundRect(android.graphics.RectF(l, t, l + w, t + h), 10 * d, 10 * d, p) // 차체
-    p.color = 0xFFDCE6F5.toInt()
-    c.drawRoundRect(android.graphics.RectF(l + 5 * d, t + 12 * d, l + w - 5 * d, t + 24 * d), 4 * d, 4 * d, p) // 앞 유리
-    c.drawRoundRect(android.graphics.RectF(l + 6 * d, t + h - 15 * d, l + w - 6 * d, t + h - 7 * d), 3 * d, 3 * d, p) // 뒤 유리
-    p.color = 0xFFFFF4B0.toInt(); c.drawCircle(l + 7 * d, t + 4 * d, 3 * d, p); c.drawCircle(l + w - 7 * d, t + 4 * d, 3 * d, p) // 전조등
-    p.color = android.graphics.Color.WHITE; p.style = Paint.Style.STROKE; p.strokeWidth = 2 * d
-    c.drawRoundRect(android.graphics.RectF(l, t, l + w, t + h), 10 * d, 10 * d, p)
+    p.color = 0x55000000; c.save(); c.translate(0f, 3 * d); c.drawPath(path, p); c.restore() // 그림자
+    p.color = 0xFF6552D9.toInt(); c.drawPath(path, p)
+    p.style = Paint.Style.STROKE; p.strokeWidth = 4 * d; p.strokeJoin = Paint.Join.ROUND; p.color = android.graphics.Color.WHITE; c.drawPath(path, p)
     return bmp
 }
 
@@ -203,7 +198,12 @@ fun MapLibrePane(
                     PF.iconImage(Expression.get("icon")), PF.iconAllowOverlap(true), PF.iconIgnorePlacement(true),
                     PF.iconAnchor(Property.ICON_ANCHOR_BOTTOM), PF.symbolSortKey(Expression.get("z")),
                     PF.iconRotate(Expression.coalesce(Expression.get("rot"), Expression.literal(0))),
-                    PF.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP), PF.iconPitchAlignment(Property.ICON_PITCH_ALIGNMENT_VIEWPORT)))
+                    PF.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP), PF.iconPitchAlignment(Property.ICON_PITCH_ALIGNMENT_VIEWPORT)).withFilter(Expression.neq(Expression.get("icon"), Expression.literal("car"))))
+                // 2026-11-14 내 차 화살표는 지도에 눕혀(3D 기울임에 맞게 평평하게) 진행 방향으로 회전
+                st.addLayer(SymbolLayer("car-l", "marks").withProperties(
+                    PF.iconImage(Expression.get("icon")), PF.iconAllowOverlap(true), PF.iconIgnorePlacement(true), PF.iconAnchor(Property.ICON_ANCHOR_CENTER),
+                    PF.iconRotate(Expression.coalesce(Expression.get("rot"), Expression.literal(0))),
+                    PF.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP), PF.iconPitchAlignment(Property.ICON_PITCH_ALIGNMENT_MAP)).withFilter(Expression.eq(Expression.get("icon"), Expression.literal("car"))))
                 // 고정 아이콘
                 st.addImage("pin-O", pinBitmap(d, android.graphics.Color.rgb(66, 165, 245), "O"))
                 st.addImage("pin-D", pinBitmap(d, android.graphics.Color.rgb(239, 83, 80), "D"))
@@ -315,7 +315,9 @@ fun MapLibrePane(
     LaunchedEffect(m, nav, MlHandle.followPaused) {
         if (m == null || nav == null || MlHandle.followPaused) return@LaunchedEffect
         val prev = camBearing[0]
-        val brg = if (prev.isNaN()) nav.bearing else prev + ((((nav.bearing - prev) % 360.0) + 540.0) % 360.0 - 180.0) * 0.3
+        // 카메라 방향: 160m 앞 지점 쪽(짧은 지그재그에 흔들리지 않게), 0.1초마다 20%씩 따라감
+        val target = nav.lookAhead?.let { la -> com.jiye.dropmate.engine.Geo.bearingDeg(nav.car, la) } ?: nav.bearing
+        val brg = if (prev.isNaN()) target else prev + ((((target - prev) % 360.0) + 540.0) % 360.0 - 180.0) * 0.2
         camBearing[0] = brg
         val cam = if (nav.tilt) CameraPosition.Builder().target(nav.car.ml()).zoom(17.0).bearing(brg).tilt(55.0)
             // 위쪽 여백을 크게 줘서 차가 화면 아래쪽에 오고 앞길이 넓게 보이게

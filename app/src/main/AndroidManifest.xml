@@ -10,6 +10,13 @@
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <uses-feature android:name="android.hardware.type.automotive" android:required="false" />
 
+    <!-- 2026-11-14: Android 11+ 에서 TTS 엔진(Pleos caas SpeechService 등)에 연결하려면 필요 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="false"
         android:label="DropMate"

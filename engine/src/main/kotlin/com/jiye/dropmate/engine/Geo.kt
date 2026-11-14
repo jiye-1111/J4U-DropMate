@@ -6,6 +6,13 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.*
 
 object Geo {
+    /** a → b 방위각(도, 북쪽 0·시계방향) */
+    fun bearingDeg(a: LatLng, b: LatLng): Double {
+        val y = Math.sin(Math.toRadians(b.lon - a.lon)) * Math.cos(Math.toRadians(b.lat))
+        val x = Math.cos(Math.toRadians(a.lat)) * Math.sin(Math.toRadians(b.lat)) - Math.sin(Math.toRadians(a.lat)) * Math.cos(Math.toRadians(b.lat)) * Math.cos(Math.toRadians(b.lon - a.lon))
+        return (Math.toDegrees(Math.atan2(y, x)) + 360.0) % 360.0
+    }
+
     private const val R = 6_371_008.8
 
     fun haversineM(a: LatLng, b: LatLng): Double {
