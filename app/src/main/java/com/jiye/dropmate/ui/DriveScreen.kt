@@ -137,7 +137,7 @@ fun DriveScreen(vm: AppViewModel) {
     // 음성 안내
     val speaker = remember { Speaker(ctx) }
     DisposableEffect(speaker) { onDispose { speaker.shutdown() } }
-    var voiceOn by remember { mutableStateOf(true) }
+    var voiceOn by remember { mutableStateOf(vm.voiceDefault) }
     var voice by remember(r?.requestId) { mutableStateOf(VoiceGuide()) }
     // 하차 지점 도착 카드, 재탐색 상태
     var dropArrived by remember(r?.requestId) { mutableStateOf(false) }
@@ -160,6 +160,7 @@ fun DriveScreen(vm: AppViewModel) {
         scopeNav.launch {
             val o = vm.refreshPassengerOptions(at, dest)
             refreshed = o
+            if (o != null && voiceOn) voice.refreshed()?.let { speaker.say(it) }
             refreshNote = if (o != null) "하차 시점 기준으로 다시 계산했어요 · " + SimpleDateFormat("HH:mm", Locale.KOREA).format(Date())
                 else "다시 계산 실패(${vm.lastRouteError ?: "원인 미확인"}) · 출발 전 계산한 경로를 보여 줘요"
         }
@@ -178,7 +179,13 @@ fun DriveScreen(vm: AppViewModel) {
     }
 
     // 안내를 시작하면 차 따라가기를 켠 상태로 시작(안내 전 지도를 옮긴 기록은 지운다)
-    LaunchedEffect(step) { if (step == Step.NAV) MlHandle.followPaused = false }
+    LaunchedEffect(step) {
+        if (step != Step.NAV) return@LaunchedEffect
+        MlHandle.followPaused = false
+        // 2026-11-14 음성: 안내 시작 문장(하차점 이름 포함)
+        val dropName = if (driveOnly) null else r?.best?.takeIf { it.plan.type != CandidateType.D_DROP }?.plan?.label?.replace(" 인근 경로상 하차", " 근처")
+        if (voiceOn) voice.start(dropName)?.let { speaker.say(it) }
+    }
     LaunchedEffect(step, navSim, navSession) {
         val ns = navSession
         if (step != Step.NAV || ns == null) return@LaunchedEffect
@@ -288,7 +295,7 @@ fun DriveScreen(vm: AppViewModel) {
             if (step == Step.OPTIONS && r != null && !(driving.restricted)) {
                 OptionsLayout(r, routeKind, { routeKind = it }, vm, navSession != null,
                     onNav = { sim, simOnly -> navSim = sim; navSimOnly = simOnly; navState = null; driveOnly = false
-                        navSession = NavSession.from(r); voiceOn = guideMsg == null; step = Step.NAV },
+                        navSession = NavSession.from(r); voiceOn = guideMsg == null && vm.voiceDefault; step = Step.NAV },
                     onBack = { step = Step.RECOMMEND }) { msg -> guideMsg = msg; step = Step.GUIDE }
             } else if (step != Step.NAV) BoxWithConstraints(Modifier.fillMaxSize().padding(start = 24.dp, top = 96.dp, bottom = if (step == Step.GUIDE) 128.dp else 24.dp)) {
                 val w = (maxWidth * 0.36f).coerceIn(380.dp, 500.dp)
@@ -319,7 +326,7 @@ fun DriveScreen(vm: AppViewModel) {
                         Step.OPTIONS -> r?.let { OptionsStep(it, routeKind, { routeKind = it }, vm, navSession != null,
                             // Pleos 내장 내비로 이미 안내 중이면(guideMsg) DropMate 음성은 꺼서 겹치지 않게
                             onNav = { sim, simOnly -> navSim = sim; navSimOnly = simOnly; navState = null; driveOnly = false
-                                navSession = NavSession.from(it); voiceOn = guideMsg == null; step = Step.NAV }) { msg -> guideMsg = msg; step = Step.GUIDE } }
+                                navSession = NavSession.from(it); voiceOn = guideMsg == null && vm.voiceDefault; step = Step.NAV }) { msg -> guideMsg = msg; step = Step.GUIDE } }
                         Step.GUIDE -> r?.let { GuideStep(it, selected, guideMsg, vm) { step = Step.RECOMMEND } }
                         Step.NAV -> {}
                     }
@@ -894,7 +901,15 @@ private fun TmapKeyDialog(vm: AppViewModel, onClose: () -> Unit) {
     var input by remember { mutableStateOf("") }
     androidx.compose.ui.window.Dialog(onDismissRequest = onClose) {
         Column(Modifier.width(520.dp).clip(RoundedCornerShape(24.dp)).background(Hd.Card).padding(28.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("설정 · TMAP 키", color = Hd.Text, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text("설정", color = Hd.Text, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            // 2026-11-14 음성 안내 기본값(기본 켬)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("음성 안내", Modifier.weight(1f), color = Hd.Text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                Text(if (vm.voiceDefault) "켜짐" else "꺼짐", Modifier.clip(RoundedCornerShape(14.dp)).background(if (vm.voiceDefault) Hd.Purple else Hd.Bg)
+                    .clickable { vm.updateVoiceDefault(!vm.voiceDefault) }.padding(horizontal = 22.dp, vertical = 10.dp),
+                    color = if (vm.voiceDefault) Color.White else Hd.Sub, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+            Text("TMAP 키", color = Hd.Text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
             Text(if (prefix != null) "지금 쓰는 키: 직접 입력한 키 (${prefix}••••)" else "지금 쓰는 키: 앱 기본 키",
                 color = Hd.Navy, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Text("기본 키는 하루 호출 수가 적어요. 한도가 차면 본인 TMAP 앱 키를 넣어 주세요. 키는 이 기기 안에만 저장돼요.",

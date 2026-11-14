@@ -295,7 +295,9 @@ object EngineChecks {
             val dropMsg = v.next(s.stateAt(L * 0.5 - 50.0))
             check(dropMsg?.contains("동승자는 내릴 준비") == true, "하차 지점 직전 문장: $dropMsg")
             check(v.dropReached() != null && v.dropReached() == null, "하차 도착 한 번")
-            check(v.next(s.stateAt(L - 5)) == "목적지에 도착했어요. 안내를 마칩니다.", "도착")
+            check(v.next(s.stateAt(L - 5)) == "목적지에 도착했어요.", "도착")
+            check(v.start("아크로리버파크 게이트1 앞")?.startsWith("아크로리버파크 게이트1 앞에서 동승자가 내려요") == true && v.start(null) == null, "안내 시작 한 번")
+            check(v.refreshed() != null && v.refreshed() == null, "재계산 안내 한 번")
         },
         "재탐색 세션: 새 경로에 하차 지점 투영, 하차 지점과 겹치는 TMAP 경유지 안내는 하나로" to {
             val r0 = line(O, D, 1000); val L = r0.cumDistM.last()

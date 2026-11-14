@@ -207,7 +207,7 @@ class VoiceGuide {
     private val said = HashSet<String>()
 
     fun next(st: NavState): String? {
-        if (st.arrived) return once("arrive", "목적지에 도착했어요. 안내를 마칩니다.")
+        if (st.arrived) return once("arrive", "목적지에 도착했어요.")
         val n = st.next ?: return null
         val d = n.distanceM
         val what = when {
@@ -217,6 +217,7 @@ class VoiceGuide {
         }
         val id = n.atM.toInt().toString()
         return when {
+            n.isDrop && d in 400.0..550.0 -> once("$id:500", "곧 하차 지점입니다.")
             d <= 60 -> once("$id:0", if (n.isDrop) "곧 하차 지점입니다. 동승자는 내릴 준비를 해 주세요." else "곧 " + what)
             d in 150.0..300.0 -> once("$id:300", "300미터 앞에서 " + what)
             d in 700.0..1000.0 -> once("$id:1000", "1킬로미터 앞에서 " + what)
@@ -224,8 +225,14 @@ class VoiceGuide {
         }
     }
 
+    /** 안내 시작 때 한 번(2026-11-14 사용자 요청 문장) */
+    fun start(dropName: String?): String? = once("start", if (dropName != null) "${dropName}에서 동승자가 내려요. 안내를 시작합니다." else "안내를 시작합니다.")
+
+    /** 하차 후 동승자 경로를 다시 계산했을 때 한 번 */
+    fun refreshed(): String? = once("refreshed", "동승자 경로를 다시 계산했어요.")
+
     /** 하차 지점을 지났을 때 한 번 */
-    fun dropReached(): String? = once("drop-reached", "하차 지점에 도착했어요. 동승자가 내린 뒤 운전자 목적지로 안내를 이어갑니다.")
+    fun dropReached(): String? = once("drop-reached", "하차 지점에 도착했어요.")
 
     fun reset() = said.clear()
 

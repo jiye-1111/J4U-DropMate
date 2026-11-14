@@ -370,6 +370,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 결과를 지우고 입력 화면으로(입력값은 유지) */
     fun clearResult() { result = null; message = null }
 
+    /** 설정: 음성 안내 기본값(기본 켬). 기기 안에만 저장 */
+    private val settingsSp = app.getSharedPreferences("dropmate_settings", android.content.Context.MODE_PRIVATE)
+    var voiceDefault by mutableStateOf(settingsSp.getBoolean("voice_default", true)); private set
+    fun updateVoiceDefault(on: Boolean) { voiceDefault = on; settingsSp.edit().putBoolean("voice_default", on).apply() }
+
     /** 하차점 순위 기준 바꾸기(최소 시간/최소 환승). 이미 받은 결과만 다시 정렬하며 TMAP 호출은 없다. */
     fun setRankMode(m: RankMode) { result = result?.withRankMode(m, policy.rankRounding) }
 
