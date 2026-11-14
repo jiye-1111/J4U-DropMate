@@ -129,7 +129,7 @@ data class RecommendResult(
     /** 순위 기준을 바꿔 1위·판정·절약시간을 다시 계산한다. 이미 받은 결과만 쓰며 TMAP 호출은 없다. */
     fun withRankMode(mode: RankMode, rounding: MinuteRounding = MinuteRounding.ROUND): RecommendResult {
         if (mode == rankMode) return this
-        val j = DropComparison.judge(candidates, solo, t0EpochSec, rounding, mode, baseline?.let { t0EpochSec + it.totalTimeSec })
+        val j = DropComparison.judge(candidates, solo, rounding, mode)
         return copy(rankMode = mode, best = j.best, verdict = j.verdict, verdictReason = j.reason, savingSec = j.savingSec)
     }
 
@@ -229,7 +229,7 @@ class DropMateEngine(
 
         // 5. 순위 (기본: 최소 시간)
         val rankable = results.filter { it.rankable }
-        val best = rankable.minWithOrNull(DropComparison.comparator(policy.rankRounding, RankMode.FASTEST))
+        val best = rankable.minWithOrNull(DropComparison.comparator(policy.rankRounding))
         val notQueried = results.count { it.status == CandStatus.NOT_QUERIED_BUDGET || it.status == CandStatus.NOT_QUERIED_HALTED }
         val undetermined = results.count { it.status in setOf(CandStatus.FAILED, CandStatus.ACCESS_WALK_UNKNOWN, CandStatus.WALK_DIRECT_UNRATED) }
         val scope = "평가 완료 ${rankable.size}개 / 계획 ${planned.size}개 (미조회 $notQueried, 미확정·실패 $undetermined) 중 가장 빠름 — 직행 경로 주변 ${policy.corridorStraightLimitM}m 후보 탐색, 경로 밖 우회 하차는 미탐색"
@@ -239,8 +239,8 @@ class DropMateEngine(
         notes += policy.walkDirectLimitSec?.let { if (it == WALK_DIRECT_NO_LIMIT) "도보 직행 한도 없음 — 동승자 도착 시간으로 비교, 대중교통이 너무 가까우면 TMAP 보행자 경로로 계산" else "도보 직행 한도: ${it}초 — 대중교통이 너무 가까우면 TMAP 보행자 경로로 계산" }
             ?: "도보 직행 한도 미확정: 도보만으로 가는 여정은 순위 미반영"
 
-        // 2026-11-14: 판정·순위는 DropComparison.judge 하나로(기본 최소 시간 = 원래 규칙). 화면에서 최소 환승으로 바꾸면 같은 결과로 다시 판정한다(호출 없음).
-        val j = DropComparison.judge(results, solo, req.t0EpochSec, policy.rankRounding, RankMode.FASTEST, req.t0EpochSec + base.totalTimeSec)
+        // 2026-11-14: 판정·순위는 DropComparison.judge 하나로(기본 최소 시간 = 원래 규칙). 화면에서 오래 같이 타기로 바꾸면 같은 결과로 다시 판정한다(호출 없음).
+        val j = DropComparison.judge(results, solo, policy.rankRounding, RankMode.FASTEST)
         return result(j.verdict, j.reason, base, solo, results, pfCounts, j.best, j.savingSec, scope, provisional)
     }
 

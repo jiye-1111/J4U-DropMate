@@ -492,42 +492,39 @@ object EngineChecks {
             val farBigDetour = far.copy(driverAddSec = 800, driverArrivalEpochSec = T0 + 1800)
             eq(listOf(near, farBigDetour).sortedWith(DropComparison.comparator(MinuteRounding.ROUND)).first().plan.id, "A-near", "운전자 우회 적은 쪽")
         },
-        "순위(최소 환승): 환승 적은 순 → 도착 → 운전자 우회 → 함께 탄 시간, 하차점 안의 최소 환승 여정으로 비교(2026-11-14)" to {
-            fun ev(i: Int, arr: Long, tr: Int) = EvaluatedItinerary(i, itin((arr - T0).toInt(), 100, transfers = tr), arr, CandStatus.EVALUATED, "합성")
-            fun cand(id: String, drop: Long, evs: List<EvaluatedItinerary>): CandidateResult {
-                val fast = evs.minBy { it.arrivalEpochSec!! }
-                return CandidateResult(PlannedCandidate(id, CandidateType.MIDDLE, O, id, (drop - T0).toDouble(), null, null, GtfsLink.DIRECT, 0, PrefilterState.QUERY_TARGET, id, 0.0),
-                    CandStatus.EVALUATED, "합성", dropCompleteEpochSec = drop, driverAddSec = 60, driverArrivalEpochSec = T0 + 1060,
-                    passengerArrivalEpochSec = fast.arrivalEpochSec, totalWalkSec = 300, transferCount = fast.itinerary.transferCount,
-                    chosen = fast, itineraries = evs, routeOptions = RouteOptions.select(evs))
-            }
-            // A: 가장 빠른 여정 25분·환승 2회, 같은 하차점에 30분·환승 0회 여정도 있음. B: 27분·환승 1회
-            val a = cand("A", T0 + 300, listOf(ev(0, T0 + 1500, 2), ev(1, T0 + 1800, 0)))
-            val b = cand("B", T0 + 600, listOf(ev(0, T0 + 1620, 1)))
-            eq(DropComparison.rank(listOf(a, b), MinuteRounding.ROUND, RankMode.FASTEST).first().candidate.plan.id, "A", "최소 시간은 A(25분)")
-            eq(DropComparison.rank(listOf(a, b), MinuteRounding.ROUND, RankMode.FEWEST_TRANSFERS).first().candidate.plan.id, "A", "최소 환승도 A(같은 하차점의 환승 0회 여정)")
-            val a2 = cand("A2", T0 + 300, listOf(ev(0, T0 + 1500, 2)))
-            val r2 = DropComparison.rank(listOf(a2, b), MinuteRounding.ROUND, RankMode.FEWEST_TRANSFERS)
-            eq(r2.first().candidate.plan.id, "B", "환승 1회 B가 환승 2회 A2보다 먼저")
-            eq(r2.first().gapToBestSec, 0L, "1위 차이 0")
+        "순위(오래 같이 타기): 최소 시간 1위 대비 동승자 +5분·운전자 +5분 이내 중 같이 타는 시간 긴 순, 범위 밖은 뒤에(2026-11-14)" to {
+            fun cand(id: String, drop: Long, pArr: Long, add: Int) = CandidateResult(
+                PlannedCandidate(id, CandidateType.MIDDLE, O, id, (drop - T0).toDouble(), null, null, GtfsLink.DIRECT, 0, PrefilterState.QUERY_TARGET, id, 0.0),
+                CandStatus.EVALUATED, "합성", dropCompleteEpochSec = drop, driverAddSec = add, driverArrivalEpochSec = T0 + 1000 + add,
+                passengerArrivalEpochSec = pArr, totalWalkSec = 300, transferCount = 0)
+            val near = cand("A-near", T0 + 120, T0 + 1500, 60)          // 최소 시간 1위(25분, 우회 1분), 2분 같이 탐
+            val mid = cand("B-mid", T0 + 600, T0 + 1680, 200)           // +3분, 우회 +140초 → 범위 안, 10분 같이 탐
+            val far = cand("C-far", T0 + 900, T0 + 1860, 300)           // +6분 → 범위 밖(동승자)
+            val farDetour = cand("D-detour", T0 + 1000, T0 + 1700, 420) // 우회 +360초 → 범위 밖(운전자)
+            val list = listOf(near, mid, far, farDetour)
+            eq(DropComparison.rank(list, MinuteRounding.ROUND, RankMode.FASTEST).first().candidate.plan.id, "A-near", "최소 시간 1위")
+            val s = DropComparison.rank(list, MinuteRounding.ROUND, RankMode.STAY_LONGER)
+            eq(s.map { it.candidate.plan.id }, listOf("B-mid", "A-near", "D-detour", "C-far"), "범위 안은 같이 오래 탄 순, 범위 밖은 최소 시간 순")
+            eq(s.first().gapToBestSec, 0L, "1위 차이 0")
+            check(STAY_LONGER_TOLERANCE_SEC == 300L, "허용 5분")
         },
-        "판정(최소 환승): 각자 가기도 같은 기준, 탭 전환은 호출 0" to {
+        "판정(오래 같이 타기): 판정은 최소 시간 그대로, 1위만 바뀌고 탭 전환은 호출 0" to {
             val P = LatLng(37.45, 127.10)
-            val dropD = T0 + 1000 + 60
-            val arrD = TimeUtil.ceilToMinute(dropD) + 1200
-            // 각자 가기: 동승자 하차 후 경로보다 5분 빠르지만 환승 2회. 함께 가기(D 하차 후): 환승 0회
-            val soloTotal = (arrD - 300 - T0).toInt()
-            val prov = FakeProvider({ o, d, _ -> ProviderResult.Ok(line(o, d, if (o == O && d == D) 1000 else 99999)) },
-                { o, _, _ -> if (o == D) ProviderResult.Ok(listOf(itin(1200, 100, transfers = 0))) else ProviderResult.Ok(listOf(itin(soloTotal, 100, transfers = 2))) })
+            val prov = FakeProvider({ o, d, _ -> when {
+                o == O && d == D -> ProviderResult.Ok(line(O, D, 1000))
+                o == O && d == P -> ProviderResult.Ok(line(O, P, 1100))   // 문 앞: 운전자 +약 2분
+                else -> ProviderResult.Ok(line(o, d, 30)) } },
+                { o, _, _ -> if (o == O) ProviderResult.Ok(listOf(itin(2400, 100))) else ProviderResult.Ok(listOf(itin(600, 100))) })
             val r = engineNoGtfs().recommend(req(P), prov, MemoryLedger(26))
-            eq(r.rankMode, RankMode.FASTEST, "기본 최소 시간"); eq(r.verdict, Verdict.NO_GAIN, "최소 시간: 각자 가기가 5분 빠름")
             val sent = prov.calls.size
-            val t = r.withRankMode(RankMode.FEWEST_TRANSFERS)
+            val t = r.withRankMode(RankMode.STAY_LONGER)
             eq(prov.calls.size, sent, "탭 전환 호출 0")
-            eq(t.verdict, Verdict.RECOMMEND, "최소 환승: 함께 가기 환승 0회 < 각자 2회")
-            eq(t.savingSec, -300L, "절약은 -5분(느리지만 편함)")
+            eq(t.verdict, r.verdict, "판정은 최소 시간 그대로")
             check(t.best != null && t.dropRanking().first().candidate.plan.id == t.best!!.plan.id, "1위 = 선택")
-            eq(t.withRankMode(RankMode.FASTEST).verdict, Verdict.NO_GAIN, "다시 최소 시간으로")
+            val bestRide = t.best!!.dropCompleteEpochSec!!
+            check(t.dropRanking().filter { it.rank != null }.all { d -> d.candidate.passengerArrivalEpochSec!! - r.best!!.passengerArrivalEpochSec!! > STAY_LONGER_TOLERANCE_SEC ||
+                (d.candidate.driverAddSec ?: 0) - (r.best!!.driverAddSec ?: 0) > STAY_LONGER_TOLERANCE_SEC || d.candidate.dropCompleteEpochSec!! <= bestRide }, "범위 안에서 가장 오래 같이 탄 곳이 1위")
+            eq(t.withRankMode(RankMode.FASTEST).best?.plan?.id, r.best?.plan?.id, "다시 최소 시간으로")
         },
         "하차점 앞뒤 50m 안에 자동차전용·교량이 있으면 하차 불가, 60m 밖이면 허용" to {
             // 0~1000m 직선, 10구간(100m씩). 구간 6(600~700m)만 자동차전용(roadType 1)
