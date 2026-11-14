@@ -1,11 +1,12 @@
 # DropMate
 
-> 공모전 제출용 요약 (2026-11-13 갱신)
+> 공모전 제출용 요약 (2026-11-14 갱신) · 시연 영상: https://youtu.be/cq8AJrdYa48
 
 | 항목 | 내용 |
 |---|---|
 | 앱 이름 | DropMate (운전자·동승자 하차 지점 추천) |
 | 패키지 | `com.jiye.dropmate` |
+| 시연 영상 | https://youtu.be/cq8AJrdYa48 (관악동부센트레빌 → 래미안원베일리, 동승자 아크로리버파크 · Pleos Connect 에뮬레이터) |
 | 실행 방법 | Android Studio에서 이 폴더를 열고 Gradle JDK를 21로 지정 → `gradlew -PpleosSdk=true :app:assembleRelease` → Pleos Connect 에뮬레이터에 설치·실행. `app/src/main/assets/api.properties`(양식: `api.properties.example`)에 TMAP 키가 있어야 경로 계산이 동작한다 |
 | 테스트 환경 | Windows 11, Android Studio, JDK 21, Gradle 8.11.1, AGP 8.7.3, Kotlin 2.0.21, compileSdk/targetSdk 35, **minSdk 28**(Pleos 요건) |
 | 에뮬레이터 | Pleos Connect Emulator v2.1.0 (AVD `Pleos_Connect_v2.1.0`, API 34), 그래픽 Hardware(GPU) |
