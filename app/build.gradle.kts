@@ -74,4 +74,6 @@ dependencies {
     if (pleosSdk) implementation("ai.pleos.playground:NaviHelper:3.0.5")
     // 2026-11-12 사용자 요청(현대차 SDK 최대 활용·내 위치): 차량 위치. AAR 매니페스트가 FUSED_LOCATION_BINDING 권한과 automotive 기능을 병합한다
     if (pleosSdk) implementation("ai.pleos.playground:FusedLocation:1.1.3")
+    // 2026-11-14 음성 안내: Pleos TextToSpeech SDK(ON_DEVICE 모드, 앱 등록 불필요)
+    if (pleosSdk) implementation("ai.pleos.playground:TextToSpeech:3.3.1")
 }

@@ -7,4 +7,6 @@
     <uses-permission android:name="pleos.car.permission.NAVI_ROUTE_SEARCH" />
     <!-- Pleos FusedLocation 서비스가 요구(에뮬레이터 SecurityException 으로 확인, protection=dangerous → 실행 중 요청). 2026-11-12 사용자 요청(차량 위치) -->
     <uses-permission android:name="pleos.car.permission.FUSED_LOCATION" />
+    <!-- 2026-11-14 Pleos TextToSpeech SDK(음성 안내). protection=normal 확인 -->
+    <uses-permission android:name="pleos.car.permission.TTS_SERVICE" />
 </manifest>

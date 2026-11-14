@@ -73,8 +73,8 @@ object Hd {
 
 private enum class Step { INPUT, RECOMMEND, OPTIONS, GUIDE, NAV }
 
-/** 모의 주행 배속과 갱신 간격(2026-11-14: 8배속·0.5초 → 4배속·0.1초, 부드럽게) */
-private const val SIM_SPEED = 4.0
+/** 모의 주행 배속과 갱신 간격(2026-11-14: 0.5초 점프 → 0.1초 보간, 16:56 사용자 "빠르게": 8배속) */
+private const val SIM_SPEED = 8.0
 private const val SIM_TICK_MS = 100L
 
 @Composable
