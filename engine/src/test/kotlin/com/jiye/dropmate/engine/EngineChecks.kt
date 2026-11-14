@@ -107,9 +107,9 @@ object EngineChecks {
             eq(kindsOf(o), listOf(0 to RouteOptionKind.entries.toList()), "평가 완료만")
             eq(RouteOptions.select(listOf(opt(0, 900, 50, 0, status = CandStatus.FAILED))).size, 0, "평가 완료 없음")
         },
-        "같은 하차점: 동률 처리(환승 동률→빠른 도착, 보행 동률→빠른 도착, 도착 동률→보행)" to {
+        "같은 하차점: 동률 처리(환승 동률→빠른 도착, 보행 동률→빠른 도착, 도착 60초 안→환승)" to {
             val o = RouteOptions.select(listOf(opt(0, 1200, 300, 0), opt(1, 1100, 300, 0), opt(2, 1100, 200, 1)))
-            eq(o.first { RouteOptionKind.FASTEST in it.kinds }.itinerary.index, 2, "도착 동률 → 보행 짧은 쪽")
+            eq(o.first { RouteOptionKind.FASTEST in it.kinds }.itinerary.index, 1, "도착 동률 → 환승 적은 쪽(2026-11-14 60초 규칙)")
             eq(o.first { RouteOptionKind.FEWEST_TRANSFERS in it.kinds }.itinerary.index, 1, "환승 동률 → 빠른 도착")
             eq(o.first { RouteOptionKind.LEAST_WALK in it.kinds }.itinerary.index, 2, "최소 보행")
         },
@@ -508,6 +508,28 @@ object EngineChecks {
             eq(s.map { it.candidate.plan.id }, listOf("E-in8", "B-mid", "A-near", "D-detour", "C-far"), "범위 안은 같이 오래 탄 순, 범위 밖은 최소 시간 순")
             eq(s.first().gapToBestSec, 0L, "1위 차이 0")
             check(STAY_LONGER_TOLERANCE_SEC == 480L, "허용 8분")
+        },
+        "버스 묶음: 같은 승차·하차 정류장 다른 버스 번호를 붙이고(Lane 포함) 시간은 그대로" to {
+            fun bus(r: String, s: String, e: String, lane: List<String> = emptyList()) = TransitLeg(LegMode.BUS, r, s, e, null, null, 1000, 300, altRoutes = lane)
+            fun it(vararg legs: TransitLeg) = TransitItinerary(600, 100, 100, 0, legs.toList())
+            val a = it(bus("마을:서초03", "논현역5번출구", "강남역"))
+            val b = it(bus("지선:4312", "논현역5번출구", "강남역", lane = listOf("간선:360")))
+            val c = it(bus("간선:640", "논현역6번출구", "강남역"))
+            val out = BusAlternatives.attach(listOf(a, b, c))
+            eq(out[0].legs[0].altRoutes, listOf("지선:4312", "간선:360"), "같은 구간 다른 버스")
+            eq(out[1].legs[0].altRoutes, listOf("간선:360", "마을:서초03"), "Lane 먼저, 자기 노선 제외")
+            eq(out[2].legs[0].altRoutes, emptyList<String>(), "승차 정류장 다르면 안 묶음")
+            eq(out.map { it.totalTimeSec }, listOf(600, 600, 600), "시간 그대로")
+        },
+        "대표 여정: 가장 빠른 도착 + 60초 안이면 환승 적은 여정(16초 늦은 환승 0회 선택, 67초 늦은 건 제외)" to {
+            fun ev(i: Int, arr: Long, tr: Int, walk: Int = 300) = EvaluatedItinerary(i, itin((arr - T0).toInt(), 100, walkSec = walk, transfers = tr), arr, CandStatus.EVALUATED, "합성")
+            val m6427 = ev(0, T0 + 1604, 1, 279)   // 서초03 → 광역 M6427
+            val sbd = ev(1, T0 + 1620, 0, 392)     // 신분당선 +16초
+            val bus = ev(2, T0 + 1671, 0, 351)     // 서초03 한 번 +67초
+            eq(RouteOptions.pickFastest(listOf(m6427, sbd, bus))?.index, 1, "60초 안 환승 0회")
+            eq(RouteOptions.pickFastest(listOf(m6427, bus))?.index, 0, "60초 밖이면 가장 빠른 여정")
+            eq(RouteOptions.select(listOf(m6427, sbd, bus)).first { RouteOptionKind.FASTEST in it.kinds }.itinerary.index, 1, "최소시간 탭도 같은 기준")
+            check(ROUTE_TRANSFER_TOLERANCE_SEC == 60L, "허용 60초")
         },
         "판정(오래 같이 타기): 판정은 최소 시간 그대로, 1위만 바뀌고 탭 전환은 호출 0" to {
             val P = LatLng(37.45, 127.10)

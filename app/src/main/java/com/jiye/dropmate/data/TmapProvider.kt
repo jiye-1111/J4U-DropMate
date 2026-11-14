@@ -246,6 +246,7 @@ object TmapParser {
                     end = en?.let { s -> LatLng(s.getDouble("lat"), s.getDouble("lon")) },
                     distanceM = l.intOrNull("distance"), sectionTimeSec = l.intOrNull("sectionTime"), shape = shape,
                     routeColor = l.optString("routeColor").removePrefix("#").ifBlank { null },
+                    altRoutes = l.optJSONArray("Lane")?.let { ln -> (0 until ln.length()).mapNotNull { k -> ln.optJSONObject(k)?.optString("route")?.ifBlank { null } } }.orEmpty(),
                 )
             }
             out += TransitItinerary(it.intOrNull("totalTime"), it.intOrNull("totalWalkTime"), it.intOrNull("totalWalkDistance"), it.intOrNull("transferCount"), legs)

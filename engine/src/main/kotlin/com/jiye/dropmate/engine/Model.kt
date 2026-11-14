@@ -152,6 +152,8 @@ data class TransitLeg(
     val shape: List<LatLng> = emptyList(),
     /** TMAP 응답의 노선 고유색(RRGGBB, '#' 없음). 없으면 null */
     val routeColor: String? = null,
+    /** 2026-11-14: 같은 승차·하차 정류장으로 가는 다른 버스 번호(TMAP Lane 또는 같은 응답의 다른 여정). 표시용, 시간 계산에 쓰지 않음 */
+    val altRoutes: List<String> = emptyList(),
 )
 
 data class TransitItinerary(

@@ -244,7 +244,7 @@ fun DriveScreen(vm: AppViewModel) {
                         detourText = if (driveOnly) null else r?.best?.driverAddSec?.let { "+" + mins(it.toLong()) },
                         savingText = if (driveOnly) null else r?.savingSec?.let { if (it > 0) "${mins(it)} 절약" else "${mins(it)} 늦음" },
                         passengerReady = if (driveOnly || dropArrived) null else selected?.itinerary?.itinerary?.legs?.filter { it.mode != LegMode.WALK }
-                            ?.joinToString(" → ") { "${legKind(it.mode)} ${it.route ?: ""}".trim() }?.let { it + " · 도착 " + hhmm(selected.itinerary.arrivalEpochSec) })
+                            ?.joinToString(" → ") { "${legKind(it.mode)} ${routeName(it)}".trim() }?.let { it + " · 도착 " + hhmm(selected.itinerary.arrivalEpochSec) })
                     // 하차 지점 도착: 동승자가 이어서 갈 경로를 보여 주고, 운전자 목적지 안내는 계속된다
                     if (dropArrived && !st.arrived) DropArrivedCard(selected, refreshed, refreshNote, Modifier.align(Alignment.CenterEnd).padding(end = 96.dp),
                         onRefresh = { navState?.let { refreshAtDrop(it.snapped) } }) { dropArrived = false }
@@ -660,7 +660,7 @@ private fun OptionsStep(r: RecommendResult, kind: RouteOptionKind, onKind: (Rout
                     }
                     o?.itinerary?.itinerary?.let { i ->
                         Text("도보 ${minText(i.totalWalkTimeSec)} · 환승 ${i.transferCount?.let { "${it}회" } ?: "?"}", color = Hd.Sub, fontSize = 16.sp)
-                        Text(i.legs.joinToString(" → ") { l -> if (l.mode == LegMode.WALK) "도보" else "${legKind(l.mode)} ${l.route ?: ""}".trim() },
+                        Text(i.legs.joinToString(" → ") { l -> if (l.mode == LegMode.WALK) "도보" else "${legKind(l.mode)} ${routeName(l)}".trim() },
                             color = Hd.Sub, fontSize = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
@@ -762,7 +762,7 @@ private fun DropArrivedCard(planned: RouteOption?, refreshed: List<RouteOption>?
                     }
                     Text("도착 " + hhmm(o.itinerary.arrivalEpochSec) + " · 환승 ${i.transferCount ?: "?"}회 · 도보 ${minText(i.totalWalkTimeSec)}",
                         color = if (dark) Color.White else Hd.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                    Text(i.legs.filter { it.mode != LegMode.WALK }.joinToString(" → ") { "${legKind(it.mode)} ${it.route ?: ""}".trim() },
+                    Text(i.legs.filter { it.mode != LegMode.WALK }.joinToString(" → ") { "${legKind(it.mode)} ${routeName(it)}".trim() },
                         color = if (dark) Color(0xFFB9BACB) else Hd.Sub, fontSize = 17.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
@@ -790,7 +790,7 @@ private fun BoxScope.OptionsLayout(r: RecommendResult, kind: RouteOptionKind, on
         .padding(horizontal = 24.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Column(Modifier.weight(1f)) {
             Text("$dropName  →  $destName", color = Hd.Text, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(if (b.plan.type == CandidateType.P_VIA) "동승자 목적지 앞까지 함께 가요" else "하차 후 동승자 이동 방법 · 하차점 순위는 빠른 도착 기준", color = Hd.Sub, fontSize = 17.sp)
+            Text(if (b.plan.type == CandidateType.P_VIA) "동승자 목적지 앞까지 함께 가요" else "하차 후 동승자 이동 방법 · 하차점 순위는 ${r.rankMode.label} 기준", color = Hd.Sub, fontSize = 17.sp)
         }
         Text("← 하차점", Modifier.clip(RoundedCornerShape(14.dp)).background(Hd.Bg).clickable(onClick = onBack).padding(horizontal = 14.dp, vertical = 10.dp),
             color = Hd.Sub, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
@@ -825,7 +825,7 @@ private fun BoxScope.OptionsLayout(r: RecommendResult, kind: RouteOptionKind, on
                     }
                     o?.itinerary?.itinerary?.let { i ->
                         Text("환승 ${i.transferCount?.let { "${it}회" } ?: "?"} · 도보 ${minText(i.totalWalkTimeSec)}", color = sub, fontSize = 16.sp)
-                        Text(i.legs.filter { it.mode != LegMode.WALK }.joinToString(" → ") { l -> "${legKind(l.mode)} ${l.route ?: ""}".trim() },
+                        Text(i.legs.filter { it.mode != LegMode.WALK }.joinToString(" → ") { l -> "${legKind(l.mode)} ${routeName(l)}".trim() },
                             color = sub, fontSize = 17.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                     Spacer(Modifier.weight(1f))

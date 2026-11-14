@@ -55,4 +55,11 @@ fun minText(sec: Int?): String = when {
 /** "도보 11분", "지하철 수도권2호선 14분", "버스 7013B 8분" */
 fun legLabel(l: TransitLeg): String =
     if (l.mode == LegMode.WALK) "도보 ${minText(l.sectionTimeSec)}"
-    else "${legKind(l.mode)} ${l.route ?: "노선 미확인"} ${minText(l.sectionTimeSec)}"
+    else "${legKind(l.mode)} ${routeName(l, "노선 미확인")} ${minText(l.sectionTimeSec)}"
+
+/** 노선 이름. 같은 구간을 가는 다른 버스가 있으면 함께: "마을:서초03 · 지선:4312 중 먼저 오는 버스" (2026-11-14) */
+fun routeName(l: TransitLeg, fallback: String = ""): String {
+    val main = l.route ?: return fallback
+    if (l.mode != LegMode.BUS || l.altRoutes.isEmpty()) return main
+    return (listOf(main) + l.altRoutes).joinToString(" · ") + " 중 먼저 오는 버스"
+}

@@ -251,7 +251,7 @@ class DropMateEngine(
             is ProviderResult.NoRoute -> SoloResult(CandStatus.NO_ROUTE, "단독 경로 없음(${r.code} ${r.message})", searchDttm = dttm)
             is ProviderResult.Ok -> {
                 val ev = evalItineraries(r.value, req.t0EpochSec)
-                val best = ev.filter { it.status == CandStatus.EVALUATED }.minByOrNull { it.arrivalEpochSec!! }
+                val best = RouteOptions.pickFastest(ev)
                 if (best == null) SoloResult(summarize(ev), "유효 단독 여정 없음", itineraries = ev, searchDttm = dttm)
                 else SoloResult(CandStatus.EVALUATED, "단독 여정 ${ev.size}개 중 최조 도착", best.arrivalEpochSec, best, ev, dttm)
             }
@@ -259,7 +259,8 @@ class DropMateEngine(
     }
 
     /** 반환된 모든 여정을 비교한다. 첫 응답을 최단으로 가정하지 않는다. */
-    fun evalItineraries(list: List<TransitItinerary>, dropCompleteEpochSec: Long): List<EvaluatedItinerary> {
+    fun evalItineraries(list0: List<TransitItinerary>, dropCompleteEpochSec: Long): List<EvaluatedItinerary> {
+        val list = BusAlternatives.attach(list0)
         val aligned = TimeUtil.ceilToMinute(dropCompleteEpochSec)
         return list.mapIndexed { i, it ->
             when {
@@ -508,7 +509,7 @@ class DropMateEngine(
         val align = TimeUtil.alignDiffSec(dropComplete)
         fun fromItins(list: List<TransitItinerary>, how: String): CandidateResult {
             val ev = evalItineraries(list, dropComplete)
-            val best = ev.filter { it.status == CandStatus.EVALUATED }.minWithOrNull(compareBy({ it.arrivalEpochSec!! }, { it.itinerary.totalWalkTimeSec ?: Int.MAX_VALUE }, { it.itinerary.transferCount ?: Int.MAX_VALUE }))
+            val best = RouteOptions.pickFastest(ev)
             return if (best == null) CandidateResult(c, summarize(ev), "유효 여정 없음(${ev.size}개 검사)$how", dropComplete, add, basis, driverArr, dttm, align, itineraries = ev, nearLimit = add >= 0.8 * lim)
             else CandidateResult(c, CandStatus.EVALUATED, "여정 ${ev.size}개 중 최조 도착(정렬 ${align}초 1회 반영)$how", dropComplete, add, basis, driverArr, dttm, align,
                 best.arrivalEpochSec, best.itinerary.totalWalkTimeSec, best.itinerary.transferCount, best, ev, add >= 0.8 * lim,

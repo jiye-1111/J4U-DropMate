@@ -183,7 +183,7 @@ private fun CompareCard(title: String, time: String, detail: String, selected: B
                 }
             }
             Text(legs.joinToString(" → ") {
-                if (it.mode == LegMode.WALK) "도보" else "${legKind(it.mode)} ${it.route ?: "노선 미확인"}"
+                if (it.mode == LegMode.WALK) "도보" else "${legKind(it.mode)} ${routeName(it, "노선 미확인")}"
             }, fontSize = 14.sp, color = Muted)
         }
     }
