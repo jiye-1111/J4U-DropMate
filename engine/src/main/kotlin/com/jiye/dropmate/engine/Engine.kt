@@ -211,7 +211,7 @@ class DropMateEngine(
             req = req.copy(driverDest = bestE.pos)
             notes += "운전자 목적지 차량 입구: ${bestE.label}(${bestE.source}) — 입구 ${dEnt.size}곳 실제 경로 비교, 가장 빠른 곳"
         }
-        notes += "운전자 우회 한도: ${policy.allowedDetourSec(base.totalTimeSec)}초 = min(${policy.detourLimitSec}초, 직행 ${base.totalTimeSec}초 × ${(policy.detourRatio * 100).toInt()}%) · 2026-11-12 사용자 결정"
+        notes += "운전자 우회 한도: ${policy.allowedDetourSec(base.totalTimeSec)}초 = min(${policy.detourLimitSec}초, 직행 ${base.totalTimeSec}초 × ${(policy.detourRatio * 100).toInt()}%) · 2026-11-12 결정"
         notes += "자동차 시간: TMAP 자동차 경로 응답(요청 시점 교통). 미래 출발시각 예측 API 미사용 — 후보 간 교통 상태 동일 보장 없음"
         // 2. 기준: 단독 대중교통
         val solo = evalSolo(req, gw)
