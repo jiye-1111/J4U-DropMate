@@ -34,7 +34,7 @@ import org.maplibre.geojson.Point
 import org.maplibre.android.geometry.LatLng as MLatLng
 
 /**
- * 3D 건물 지도(2026-11-12 사용자 승인: MapLibre 오픈소스 SDK + OpenFreeMap 무료 벡터 지도, 키·요금 없음).
+ * 3D 건물 지도(2026-11-12: MapLibre 오픈소스 SDK + OpenFreeMap 무료 벡터 지도, 키·요금 없음).
  * OpenFreeMap 'liberty' 스타일의 building-3d(fill-extrusion, OSM render_height) 레이어로 건물을 입체로 세운다.
  * 건물 높이는 OSM 데이터 수준이며, 높이 정보가 없는 건물은 스타일 기본 높이로 보인다.
  * 경로·마커·안내 표시는 이 지도의 GeoJSON 레이어로 그린다(추천 알고리즘·TMAP 호출과 무관).
@@ -103,7 +103,7 @@ private fun bubbleBitmap(d: Float, text: String, bg: Int, fg: Int, tail: Boolean
     return bmp
 }
 
-/** 내 차: 내비식 진행 방향 화살표(쉐브론, 보라 + 흰 테두리). 지도에 눕혀(pitch=map) 진행 방향으로 회전. 2026-11-14 사용자 요청 */
+/** 내 차: 내비식 진행 방향 화살표(쉐브론, 보라 + 흰 테두리). 지도에 눕혀(pitch=map) 진행 방향으로 회전. 2026-11-14 */
 private fun carBitmap(d: Float): Bitmap {
     val s = (64 * d).toInt()
     val bmp = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888); val c = Canvas(bmp)
@@ -125,7 +125,7 @@ fun MapLibrePane(
     val mapView = remember {
         MapLibre.getInstance(ctx.applicationContext)
         // TextureView 모드: SurfaceView 는 Compose 패널·버튼 위로 그려져 화면을 가리므로 사용하지 않는다
-        // 2026-11-14 사용자 요청: 마우스 휠 = 커서 위치 기준 확대·축소(입력당 1단계)만, 지도 이동은 드래그.
+        // 2026-11-14: 마우스 휠 = 커서 위치 기준 확대·축소(입력당 1단계)만, 지도 이동은 드래그.
         // 휠 이벤트를 여기서 소비해 지도가 위아래로 밀리거나 바깥 화면으로 넘어가지 않게 한다.
         object : MapView(ctx, org.maplibre.android.maps.MapLibreMapOptions.createFromAttributes(ctx).textureMode(true)) {
             override fun dispatchGenericMotionEvent(event: android.view.MotionEvent): Boolean {

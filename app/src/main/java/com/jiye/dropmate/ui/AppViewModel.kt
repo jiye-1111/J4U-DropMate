@@ -29,9 +29,9 @@ data class Place(val label: String, val pos: LatLng, val source: String, val add
 
 /** 비교에 꼭 필요한 최소 호출: 운전자 직행(자동차 O→D) 1 + 동승자 단독 대중교통(O→P) 1 */
 private const val MIN_CALLS_TO_COMPARE = 2
-/** 입구 이름 검색 결과를 단지 좌표에서 몇 m 안까지 인정할지. 임시값, 사용자 미확정. */
+/** 입구 이름 검색 결과를 단지 좌표에서 몇 m 안까지 인정할지. 임시값, 미확정. */
 private const val ENTRANCE_SEARCH_RADIUS_M = 500.0
-/** 같은 입구로 묶는 거리(카카오·TMAP·입구 파일 점). 임시값, 사용자 미확정 */
+/** 같은 입구로 묶는 거리(카카오·TMAP·입구 파일 점). 임시값, 미확정 */
 private const val SAME_ENTRANCE_M = 30.0
 private val STATION_NAME = Regex("역(\\s*\\d+번\\s*출구)?$")
 
@@ -222,7 +222,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 카카오 검색으로 고른 장소 이름(지도 선택·현재 위치는 이름 없음) */
     private fun placeName(p: Place): String? = p.label.substringBefore(" · ").takeIf { p.source.startsWith("kakao") && it.isNotBlank() }
 
-    /** 2026-11-12 사용자: 역 목적지는 입구로 바꾸지 않는다(카카오 지하철역 SW8, 또는 이름이 '역'·'역 N번 출구'로 끝남). */
+    /** 2026-11-12: 역 목적지는 입구로 바꾸지 않는다(카카오 지하철역 SW8, 또는 이름이 '역'·'역 N번 출구'로 끝남). */
     private fun isStation(p: Place): Boolean =
         p.category?.startsWith("SW8|") == true || placeName(p)?.trim()?.let { STATION_NAME.containsMatchIn(it) } == true
 
@@ -230,7 +230,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /**
      * 목적지 입구. 역은 입구를 쓰지 않는다. 운전자는 차량 입구(CAR)만, 동승자는 차가 닿는 입구 모두.
-     * 2026-11-13 사용자 결정 순서: ① 주소기반 내비게이션용DB 출입구(자료 받기 전이라 지금은 비어 있음)
+     * 2026-11-13 정한 순서: ① 주소기반 내비게이션용DB 출입구(자료 받기 전이라 지금은 비어 있음)
      * → ② (아파트) 카카오 '<단지명> 정문/후문/주차장 입구/GATE' 검색 → ③ 하나도 못 찾았거나 카카오 키가 없으면 같은 검색어로 TMAP 장소 검색
      * → ④ 입구 파일(OSM·OA-21700, 이름 맞을 때만). 아파트가 아닌 건물은 ① 다음 바로 ④. 검색 결과는 저장하지 않는다(요청 때만).
      */
@@ -248,7 +248,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun pickNearest(provider: TmapProvider, id: String, p: Place, forDriver: Boolean): List<Entrance> {
         val found = findEntrances(provider, id, p, forDriver)
         if (forDriver || found.isEmpty()) return found
-        // 2026-11-13 사용자 "제일 가까운 데에 내려 줘, 입구가 가까우면 입구에": 같은 입구를 가리키는 점(카카오·TMAP·입구 파일, SAME_ENTRANCE_M 안)이
+        // 2026-11-13 가장 가까운 곳에 내려 주고, 입구가 가까우면 입구에 내려 준다: 같은 입구를 가리키는 점(카카오·TMAP·입구 파일, SAME_ENTRANCE_M 안)이
         // 여러 개면 동승자 목적지에 더 가까운 점을 하차점으로 쓴다. 서로 다른 입구 사이 선택은 엔진(운전자 추가가 가장 적은 곳) 그대로.
         val name = placeName(p) ?: return found
         val pool = found + entrances.forPlace(name, p.pos, Int.MAX_VALUE)
@@ -265,7 +265,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val fromFile = { entrances.forPlace(name, p.pos, Int.MAX_VALUE).filter { !forDriver || it.kind == EntranceKind.CAR }.take(policy.maxEntrancesPerDest) }
         if (!isApartment(p)) return fromFile()
         val complex = name.removeSuffix("아파트").trim()
-        // 2026-11-12 사용자: 'GATE' 검색어 추가(결과 이름에 GATE/게이트, 차량 입구로 보고 라벨은 결과 이름 그대로).
+        // 2026-11-12: 'GATE' 검색어 추가(결과 이름에 GATE/게이트, 차량 입구로 보고 라벨은 결과 이름 그대로).
         val gate = "GATE" to "gate"
         val words = if (forDriver) listOf("주차장 입구" to "주차장", gate) else listOf("정문" to "정문", "후문" to "후문", "주차장 입구" to "주차장", gate)
         val kakaoKey = keys.kakaoRestApiKey()
@@ -317,7 +317,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     @Volatile var lastRouteError: String? = null; private set
 
     /**
-     * 하차 시점 재계산(2026-11-12 사용자 요청): 실제 하차 위치·현재 시각으로 동승자 대중교통을 다시 조회(TMAP 1회).
+     * 하차 시점 재계산(2026-11-12): 실제 하차 위치·현재 시각으로 동승자 대중교통을 다시 조회(TMAP 1회).
      * 같은 기준(접근 보행 10분, 도보 직행 한도 없음)으로 평가하고 최소시간·최소환승·최소도보를 다시 고른다. 실패 시 null.
      */
     suspend fun refreshPassengerOptions(from: LatLng, dest: LatLng): List<RouteOption>? = withContext(Dispatchers.IO) {

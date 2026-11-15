@@ -22,7 +22,7 @@ const val ROUTE_TRANSFER_TOLERANCE_SEC = 60L
 
 object RouteOptions {
     /**
-     * 같은 출발점(하차점·각자 가기)에서 대표 여정 고르기(2026-11-14 사용자 결정 "1분 내에 버스 1번만 탈 수 있으면 타야지"):
+     * 같은 출발점(하차점·각자 가기)에서 대표 여정 고르기(2026-11-14 결정: 1분 안 차이면 환승이 적은 여정):
      * 가장 빠른 여정 도착 + [ROUTE_TRANSFER_TOLERANCE_SEC] 이내 여정 중 환승 적은 순 → 도보 적은 순 → 도착 빠른 순 → 응답 순서.
      */
     fun pickFastest(evaluated: List<EvaluatedItinerary>): EvaluatedItinerary? {
@@ -74,7 +74,7 @@ object RouteOptions {
 }
 
 /**
- * 2026-11-14 사용자 요청 "버스 여러 개면 여러 개를 보여 주던가": 버스 구간마다 같은 승차·하차 정류장으로 가는 다른 버스 번호를 붙인다.
+ * 2026-11-14 버스 묶음 표시: 버스 구간마다 같은 승차·하차 정류장으로 가는 다른 버스 번호를 붙인다.
  * 자료: TMAP 응답 구간의 Lane 목록 + 같은 응답의 다른 여정 버스 구간(승차·하차 정류장 이름이 같은 것). 추가 호출 없음, 시간 계산은 그대로.
  */
 object BusAlternatives {

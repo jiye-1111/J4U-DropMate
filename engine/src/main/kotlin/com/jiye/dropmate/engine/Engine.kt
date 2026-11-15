@@ -219,7 +219,7 @@ class DropMateEngine(
         // 3. 후보 계획 (호출 없음)
         val (planned, pfCounts) = planCandidates(req, base)
         // 4. 평가
-        // 2026-11-12 정확도 개선: 중간 하차를 1개만 보던 모순(감사: 경로 앞쪽 정류장 편향)을 고쳐
+        // 2026-11-12 정확도 개선: 중간 하차를 1개만 보던 모순(검토 결과: 경로 앞쪽 정류장 편향)을 고쳐
         // 경로 전체를 시간 구간으로 나눠 구간마다 가장 유망한 정류장을 고르고, D 하차·P 경유와 함께 비교한다.
         val selected = selectForEvaluation(planned, base)
         val results = mutableListOf<CandidateResult>()
@@ -322,10 +322,10 @@ class DropMateEngine(
                 val state = if (link == GtfsLink.NOT_FOUND) PrefilterState.UNDETERMINED else PrefilterState.QUERY_TARGET
                 if (state == PrefilterState.UNDETERMINED) counts["undetermined"] = counts["undetermined"]!! + 1 else counts["query_target"] = counts["query_target"]!! + 1
                 val suit = roadStopSuitabilityAround(base, pr.segIndex, pr.t, policy)
-                // 2026-11-12 감사 지적: TMAP 코드가 일반도로여도 정류장 이름이 지하차도·터널·고가면 하차 불가로 본다(예: 낙생지하차도)
+                // 2026-11-12 검토 결과: TMAP 코드가 일반도로여도 정류장 이름이 지하차도·터널·고가면 하차 불가로 본다(예: 낙생지하차도)
                 if (policy.noStopNameWords.any { s.name.contains(it) }) { counts["no_stop_name"] = (counts["no_stop_name"] ?: 0) + 1; continue }
                 if (suit == StopSuitability.NO_STOP) {
-                    // 사용자 결정 2026-11-12: 고속도로·자동차전용·터널 등 하차 불가 구간 위 투영점은 후보에서 제외(호출 0)
+                    // 2026-11-12 결정: 고속도로·자동차전용·터널 등 하차 불가 구간 위 투영점은 후보에서 제외(호출 0)
                     counts["no_stop_road"] = (counts["no_stop_road"] ?: 0) + 1; continue
                 }
                 val dropPt = pr.point
@@ -387,7 +387,7 @@ class DropMateEngine(
         var carAfterDrop: CarRoute? = null
         fun done(r: CandidateResult) = r.copy(callsUsed = gw.sent - before, carToDrop = carToDrop, carAfterDrop = carAfterDrop)
         val directArrive = req.t0EpochSec + base.totalTimeSec
-        // 2026-11-12 사용자 결정: 요청별 우회 한도 = min(900초, 직행 × 30%)
+        // 2026-11-12 결정: 요청별 우회 한도 = min(900초, 직행 × 30%)
         val lim = policy.allowedDetourSec(base.totalTimeSec)
 
         val dropComplete: Long; val add: Int; val basis: String
@@ -423,11 +423,11 @@ class DropMateEngine(
             CandidateType.P_VIA -> {
                 // 2026-11-12 입구 보강: 동승자 목적지 입구가 있으면 입구마다 O→입구·입구→D 를 실제로 조회해 운전자 추가가 가장 적은 곳을 고른다
                 val spots = if (req.passengerEntrances.isEmpty()) listOf(c) else req.passengerEntrances.map { e ->
-                    // 2026-11-13 사용자: 하차점 이름을 짧게('아크로리버파크 게이트1 앞'). 입구 라벨에는 단지명이 들어 있다(AppViewModel)
+                    // 2026-11-13: 하차점 이름을 짧게('아크로리버파크 게이트1 앞'). 입구 라벨에는 단지명이 들어 있다(AppViewModel)
                     c.copy(dropPoint = e.pos, label = "${e.label} 앞", note = "입구 출처: ${e.source}")
                 }
                 val outs = spots.map { sp -> pVia(sp, req, base, gw, drop, lim) }.toMutableList()
-                // 2026-11-13 사용자 결정 "문 앞 경유만 같이 고르기": 운전자 입구는 출발지에서 가장 빠른 곳이 기본이지만,
+                // 2026-11-13 결정(문 앞 경유만 같이 고르기): 운전자 입구는 출발지에서 가장 빠른 곳이 기본이지만,
                 // 문 앞 경유에서는 O→동승자 입구가 짧은 상위 2곳에 대해 나머지 운전자 입구(최대 2곳)로도 입구→운전자 입구를 조회해 운전자 추가가 가장 적은 조합을 쓴다.
                 val alts = req.driverEntrances.filter { it.kind == EntranceKind.CAR }.take(policy.maxEntrancesPerDest)
                     .filter { Geo.haversineM(it.pos, req.driverDest) > 1.0 }.take(2)
@@ -469,7 +469,7 @@ class DropMateEngine(
             is ProviderResult.Fail -> return done(failOrHalt(c, r))
         }
         carToDrop = op
-        // 2026-11-13 사용자: 입구까지 안내하고 끝(당겨 내리기·도보 시간 추가 없음).
+        // 2026-11-13: 입구까지 안내하고 끝(당겨 내리기·도보 시간 추가 없음).
         val lower = op.totalTimeSec + drop - base.totalTimeSec
         if (lower > lim)
             return done(CandidateResult(c, CandStatus.EXCLUDED_DETOUR, "O→P+하차−직행 = ${lower}초 > ${lim}초 (P→D ≥ 0 이므로 확정). P→D 호출 생략", driverAddSec = null))

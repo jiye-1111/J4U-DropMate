@@ -8,40 +8,40 @@ data class LatLng(val lat: Double, val lon: Double) {
 enum class MinuteRounding { ROUND, FLOOR, CEIL }
 
 enum class CarTimeMode {
-    /** O→D 직행 응답의 구간별 시간으로 O→s, s→D 산출 (추가 호출 0). 사용자 결정 2026-11-04 */
+    /** O→D 직행 응답의 구간별 시간으로 O→s, s→D 산출 (추가 호출 0). 2026-11-04 결정 */
     ROUTE_SEGMENT,
     /** 후보마다 O→s, s→D를 TMAP으로 조회 (후보당 2회). */
     TMAP_QUERY,
 }
 
 /**
- * 정책 설정. 값은 PLAN_mj3 + 2026-11-04 사용자 답변 기준.
+ * 정책 설정. 값은 PLAN_mj3 + 2026-11-04 결정 기준.
  * null = 미확정. 미확정 값은 0이나 임의 값으로 채우지 않는다.
  */
 data class Policy(
     val version: String = "mj3-dev-20261112-acc",
-    /** 운전자 우회 한도 상한(초). 2026-11-12 사용자 결정: 최대 15분 */
+    /** 운전자 우회 한도 상한(초). 2026-11-12 결정: 최대 15분 */
     val detourLimitSec: Int = 900,
-    /** 2026-11-12 사용자 결정: 한도 = min(15분, 직행시간 × 30%) */
+    /** 2026-11-12 결정: 한도 = min(15분, 직행시간 × 30%) */
     val detourRatio: Double = 0.30,
     /** DEC-08 [합의·조정 예정] */
     val nearLimitSec: Int = 720,
-    /** 사용자 결정: 하차점에서 첫 탑승 지점까지 실제 접근 보행 10분 이내 */
+    /** 결정: 하차점에서 첫 탑승 지점까지 실제 접근 보행 10분 이내 */
     val accessWalkLimitSec: Int = 600,
     /** DEC-07 [합의] 일반 도로변 하차 소요. 개발 가정값임을 결과에 표시 */
     val curbDropoffSec: Int = 60,
-    /** DEC-15 [승인] 순위용 분 변환 방식: 사용자 결정 2026-11-04 = 반올림 */
+    /** DEC-15 [승인] 순위용 분 변환 방식: 2026-11-04 결정 = 반올림 */
     val rankRounding: MinuteRounding = MinuteRounding.ROUND,
     /**
-     * 도보 직행(하차점→동승자 목적지 걸어서만) 한도(초). 2026-11-12 사용자 결정(DEC-14): 한도 없음 = WALK_DIRECT_NO_LIMIT.
+     * 도보 직행(하차점→동승자 목적지 걸어서만) 한도(초). 2026-11-12 결정(DEC-14): 한도 없음 = WALK_DIRECT_NO_LIMIT.
      * 걷는 시간이 길면 동승자 도착이 늦어져 순위에서 자연히 밀린다. null 이면 도보 직행 여정은 순위 미반영(이전 동작).
      */
     val walkDirectLimitSec: Int? = WALK_DIRECT_NO_LIMIT,
     /** DEC-03 대안 표시: 미확정 → 비활성 */
     val alternativeEnabled: Boolean = false,
     /**
-     * 요청당 평가 후보 수(D 하차·P 경유 포함). 2026-11-04 결정은 3개였으나, 감사에서 중간 하차 1개만 평가하는 것이
-     * 정확도 손실의 주원인으로 확인되어 2026-11-12 사용자 요청(정확도 개선, 일 5,000회 허용)으로 8개로 늘림.
+     * 요청당 평가 후보 수(D 하차·P 경유 포함). 2026-11-04 결정은 3개였으나, 검토에서 중간 하차 1개만 평가하는 것이
+     * 정확도 손실의 주원인으로 확인되어 2026-11-12 정확도 개선(일 5,000회 허용)으로 8개로 늘림.
      */
     val maxCandidatesPerRequest: Int = 8,
     /** 중간 하차 후보 최대 수. 경로 전체 구간에 고르게 나눠 고른다 */
@@ -63,7 +63,7 @@ data class Policy(
     /** TMAP 대중교통 totalTime 이 초기 대기를 포함하는지 공급자 문서로 확인되지 않음 */
     val transitTimeBasisVerified: Boolean = false,
     /**
-     * 2026-11-12 사용자 결정: 실제로 내려줄 수 없는 도로만 하차 후보에서 제외한다.
+     * 2026-11-12 결정: 실제로 내려줄 수 없는 도로만 하차 후보에서 제외한다.
      * TMAP roadType 0 고속도로, 1 자동차전용 은 하차 불가.
      */
     val noStopRoadTypes: Set<Int> = setOf(0, 1),
@@ -197,5 +197,5 @@ interface RouteProvider {
     fun walk(origin: LatLng, dest: LatLng): ProviderResult<TransitItinerary> = ProviderResult.NoRoute("UNSUPPORTED", "보행자 경로 미지원")
 }
 
-/** 도보 직행 한도 없음(2026-11-12 사용자 결정 DEC-14) */
+/** 도보 직행 한도 없음(2026-11-12 결정 DEC-14) */
 const val WALK_DIRECT_NO_LIMIT: Int = Int.MAX_VALUE

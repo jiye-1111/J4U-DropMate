@@ -225,7 +225,7 @@ class VoiceGuide {
         }
     }
 
-    /** 안내 시작 때 한 번(2026-11-14 사용자 요청 문장) */
+    /** 안내 시작 때 한 번(2026-11-14 추가 문장) */
     fun start(dropName: String?): String? = once("start", if (dropName != null) "${dropName}에서 동승자가 내려요. 안내를 시작합니다." else "안내를 시작합니다.")
 
     /** 하차 후 동승자 경로를 다시 계산했을 때 한 번 */

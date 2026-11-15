@@ -29,7 +29,7 @@ private val DARK_FILTER = android.graphics.ColorMatrixColorFilter(android.graphi
 )))
 
 /**
- * 밝은 지도(2026-11-12 사용자 요청: 하얗게 말고 카카오·TMAP·네이버 지도처럼 색이 있는 지도).
+ * 밝은 지도(2026-11-12: 흰 지도 대신 카카오·TMAP·네이버 지도처럼 색이 있는 지도).
  * OSM 기본 타일 색(녹지·물·도로 색)을 거의 그대로 쓰고 채도만 살짝 낮춰 차량 화면에서 덜 번쩍이게 한다. 새 외부 서비스·키 없음.
  */
 private val LIGHT_FILTER = android.graphics.ColorMatrixColorFilter(android.graphics.ColorMatrix().apply {
@@ -179,7 +179,7 @@ object MapHandle {
     fun zoomIn() { ref?.get()?.controller?.zoomIn() }
     fun zoomOut() { ref?.get()?.controller?.zoomOut() }
 
-    // 사용자 명시 요청 없이는 변경 금지: 휠만 줌, 좌클릭 드래그는 MapView 기본 이동.
+    // 고정 동작: 휠만 줌, 좌클릭 드래그는 MapView 기본 이동.
     fun wheelLocal(m: MapView, x: Float, y: Float, vscroll: Float): Boolean {
         if (!m.isShown || !x.isFinite() || !y.isFinite() || !vscroll.isFinite() || vscroll == 0f) return false
         if (x < 0f || y < 0f || x >= m.width || y >= m.height) return false

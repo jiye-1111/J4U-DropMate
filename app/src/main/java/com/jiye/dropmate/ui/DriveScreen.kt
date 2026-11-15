@@ -49,7 +49,7 @@ import java.util.*
  * 흐름: 01 입력 → 02 하차점 추천 → 03 이동 방법 → 04 길안내. 상세 비교는 '자세히 보기'에서만.
  */
 object Hd {
-    // 목업 v3 "Quiet Companion"(2026-11-12 사용자 제공): 짙은 남보라 패널·보라 강조·민트 절약
+    // 목업 v3 "Quiet Companion"(2026-11-12): 짙은 남보라 패널·보라 강조·민트 절약
     val Ink = Color(0xFF252737)
     val Purple = Color(0xFF6552D9)
     val Mint = Color(0xFFC5EDBB)
@@ -73,7 +73,7 @@ object Hd {
 
 private enum class Step { INPUT, RECOMMEND, OPTIONS, GUIDE, NAV }
 
-/** 모의 주행 배속과 갱신 간격(2026-11-14: 0.5초 점프 → 0.1초 보간, 16:56 사용자 "빠르게": 8배속) */
+/** 모의 주행 배속과 갱신 간격(2026-11-14: 0.5초 점프 → 0.1초 보간, 이후 8배속) */
 private const val SIM_SPEED = 8.0
 private const val SIM_TICK_MS = 100L
 
@@ -526,7 +526,7 @@ private fun RecommendStep(r: RecommendResult, onOptions: () -> Unit, onReset: ()
     // 머리말 카드
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Hd.Card).padding(22.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(title, color = Hd.Text, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-        // 2026-11-13 사용자: 시간대마다 결과가 달라지므로 '현재 교통 기준'과 조회 시각을 함께 보여 준다
+        // 2026-11-13: 시간대마다 결과가 달라지므로 '현재 교통 기준'과 조회 시각을 함께 보여 준다
         Text(if (b != null) "${r.rankMode.label} 기준 추천 · 현재 교통 기준 ${hhmm(r.t0EpochSec)} 조회" else r.verdictReason, color = Hd.Sub, fontSize = 18.sp)
     }
     val ranked = r.dropRanking().filter { it.rank != null }

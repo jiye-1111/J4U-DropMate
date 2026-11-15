@@ -10,7 +10,7 @@ import com.jiye.dropmate.ui.Place
 import com.jiye.dropmate.ui.Role
 
 /**
- * 사용자 승인(2026-11-12) 하의 실제 TMAP 1회 실행. 앱 화면 그대로 결과를 띄우고 요약만 출력한다(키·응답 원문 미출력).
+ * 실제 TMAP 1회 실행(2026-11-12). 앱 화면 그대로 결과를 띄우고 요약만 출력한다(키·응답 원문 미출력).
  * 좌표는 앱에 들어 있는 GTFS 역 좌표(남동인더스파크 / 논현(7호선) / 망포). -e hold <초> 로 화면 유지.
  */
 class LiveRunCheck : Instrumentation() {
@@ -51,7 +51,7 @@ class LiveRunCheck : Instrumentation() {
             val a = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) as MainActivity
             lateinit var vm: AppViewModel
             runOnMainSync { vm = ViewModelProvider(a)[AppViewModel::class.java] }
-            // case=user: 사용자가 준 장소명을 카카오 장소 검색 첫 결과로 좌표화(검색 3회)
+            // case=user: 입력한 장소명을 카카오 장소 검색 첫 결과로 좌표화(검색 3회)
             val queries = mapOf("user" to listOf("푸조비즈타워", "관악동부센트레빌아파트", "신구강변연가아파트"),
                 "seomun" to listOf("서문여자고등학교", "아크로리버파크", "래미안원베일리"))
             val qArg = arguments0?.getString("q")?.split("|")?.map { it.trim() }?.takeIf { it.size == 3 }

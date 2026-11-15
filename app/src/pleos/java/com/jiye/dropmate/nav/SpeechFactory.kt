@@ -11,7 +11,7 @@ import com.jiye.dropmate.ui.SpeechBackend
 import java.util.Locale
 
 /**
- * 차량용 빌드: Pleos TextToSpeech SDK 3.3.1(ON_DEVICE 모드 → 네트워크·앱 등록 불필요). 2026-11-14 사용자 요청 "SDK로".
+ * 차량용 빌드: Pleos TextToSpeech SDK 3.3.1(ON_DEVICE 모드 → 네트워크·앱 등록 불필요). 2026-11-14 차량 SDK 사용.
  * 권한 pleos.car.permission.TTS_SERVICE(normal). 한 번에 한 문장씩 말하고, 끝(onDone/onStop/onError)나면 다음 문장.
  */
 fun createVehicleSpeech(ctx: Context, onInit: (Boolean, String) -> Unit): SpeechBackend? = runCatching {

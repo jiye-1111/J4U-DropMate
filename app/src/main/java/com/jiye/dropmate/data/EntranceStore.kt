@@ -7,7 +7,7 @@ import com.jiye.dropmate.engine.Geo
 import com.jiye.dropmate.engine.LatLng
 
 /**
- * 공공·공개 자료로 만든 입구 목록(assets/entrances/entrances.tsv). 2026-11-12 사용자 요청.
+ * 공공·공개 자료로 만든 입구 목록(assets/entrances/entrances.tsv). 2026-11-12 추가.
  * 출처: OSM(차량 진입로가 공공도로와 만나는 점), 서울시 차량 출입구 정보 OA-21700(2022-12 조사, 이후 미갱신).
  * TMAP 응답은 약관상 24시간 넘게 보관할 수 없으므로 이 파일에 넣지 않는다(요청 때마다 조회).
  */
@@ -34,7 +34,7 @@ class EntranceStore(ctx: Context) {
     /**
      * 장소 이름에 단지 검색어가 있고 입구가 800m 안이면 그 단지 입구를 가까운 순 max 개.
      * 이름이 비었거나 맞는 단지가 없으면 빈 목록(원래 좌표 그대로 사용).
-     * 2026-11-12 사용자 결정: 이름이 맞을 때만 입구 사용. '150m 안 가장 가까운 시설' 대체는 역 근처 남의 건물 입구를 잡아 제거.
+     * 2026-11-12 결정: 이름이 맞을 때만 입구 사용. '150m 안 가장 가까운 시설' 대체는 역 근처 남의 건물 입구를 잡아 제거.
      */
     fun forPlace(name: String?, pos: LatLng, max: Int = 3): List<Entrance> {
         val n = name?.let(::norm).orEmpty()
