@@ -213,15 +213,8 @@ fun MapLibrePane(
                 st.addImage("drop-nav", bubbleBitmap(d, "하차점", 0xFF252737.toInt(), 0xFFC5EDBB.toInt(), textSp = 16f))
                 st.addImage("car", carBitmap(d))
                 st.addImage("mycar", bubbleBitmap(d, "내 차", 0xFF252737.toInt(), android.graphics.Color.WHITE))
-                // 2026-11-14 내 차 표시: MapLibre 기본 내비 화살표(LocationComponent, RenderMode.GPS). 위치 사이를 SDK가 부드럽게 애니메이션한다.
-                // 위치는 안내 화면에서 forceLocationUpdate 로 넣고(위치 엔진·권한 사용 안 함), 카메라는 앱이 직접 제어(CameraMode.NONE).
-                runCatching {
-                    val lc = m.locationComponent
-                    lc.activateLocationComponent(org.maplibre.android.location.LocationComponentActivationOptions.builder(ctx, st).useDefaultLocationEngine(false).build())
-                    lc.isLocationComponentEnabled = false
-                    lc.renderMode = org.maplibre.android.location.modes.RenderMode.GPS
-                    lc.cameraMode = org.maplibre.android.location.modes.CameraMode.NONE
-                }.onFailure { android.util.Log.w("DropMateMap", "location component ${it.javaClass.simpleName}") }
+                // 2026-11-15: 지도 SDK 기본 화살표(LocationComponent)는 Pleos 에뮬레이터 GPU 모드에서 모의 주행 중 GL 오류(SIGSEGV)로 앱이 꺼져서 쓰지 않는다.
+                // 내 차는 직접 그린 진행 방향 화살표(car-l 레이어, 지도에 눕혀 회전)로 표시.
                 style = st
             }
         }
@@ -261,14 +254,7 @@ fun MapLibrePane(
             if (pushLines) nav.aheadTraffic.filter { it.second >= 3 }.forEach { (pts, c) -> lineF(pts, trafficArgb(c), 6f)?.let { ahead += it } }
             nav.drop?.let { marks += pointF(it, "drop-nav", 5) }
             nav.dest?.let { marks += pointF(it, "pin-D", 4) }
-            // 내 차: 기본 내비 화살표(LocationComponent)로 표시. 직접 만든 마커는 쓰지 않는다
-            runCatching {
-                val lc = m.locationComponent
-                if (!lc.isLocationComponentEnabled) lc.isLocationComponentEnabled = true
-                lc.forceLocationUpdate(android.location.Location("dropmate").apply {
-                    latitude = nav.car.lat; longitude = nav.car.lon; bearing = nav.bearing.toFloat(); accuracy = 5f; time = System.currentTimeMillis()
-                })
-            }
+            val car = pointF(nav.car, "car", 10); car.addNumberProperty("rot", nav.bearing); marks += car
         } else {
             val best = result?.best
             if (result != null) {
@@ -304,7 +290,6 @@ fun MapLibrePane(
             st.getSourceAs<GeoJsonSource>("nav-ahead")?.setGeoJson(FeatureCollection.fromFeatures(ahead))
         }
         st.getSourceAs<GeoJsonSource>("marks")?.setGeoJson(FeatureCollection.fromFeatures(marks))
-        if (nav == null) runCatching { val lc = m.locationComponent; if (lc.isLocationComponentActivated && lc.isLocationComponentEnabled) lc.isLocationComponentEnabled = false }
         wasNav[0] = nav != null
     }
 

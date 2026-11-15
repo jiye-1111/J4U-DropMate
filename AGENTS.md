@@ -27,3 +27,4 @@
 - 2026-11-14 사용자 결정: 추천 화면 탭 [최소 시간](기본, 11-12 원래 순위·판정 그대로) / [최소 환승수](15:54 이름만 변경, 원래 오래 같이 타기. 최소 시간 1위 대비 동승자 +8분·운전자 +8분 이내 후보 중 같이 타는 시간 긴 순 → 도착 → 우회, 범위 밖은 뒤에 최소 시간 순, 8분 = `STAY_LONGER_TOLERANCE_SEC` 480초, 15:21 결정). 판정은 최소 시간 그대로. 최소 환승 탭은 삭제. 탭 전환은 호출 0(`DropComparison.ordered/judge`, `RecommendResult.withRankMode`). 동승자 쪽 역 우회 하차는 제출 후 계획.
 - 2026-11-14 사용자 결정: 같은 하차점·각자 가기의 대표 여정 = 가장 빠른 도착 + 60초(`ROUTE_TRANSFER_TOLERANCE_SEC`) 이내 중 환승 → 도보 → 도착(`RouteOptions.pickFastest`, 최소시간 탭도 동일). 버스 구간은 같은 승차·하차 정류장 다른 버스 번호를 표시만(`BusAlternatives`, TMAP Lane + 다른 여정).
 - 2026-11-14 15:59 사용자 결정: 추천 탭 이름 = [빠른 하차 모드](RankMode.FASTEST, 원래 최소 시간) / [함께 가자 모드](RankMode.STAY_LONGER, 원래 오래 같이 타기·최소 환승수). 규칙은 그대로.
+- 2026-11-15 사용자 결정: 모의 주행 중 앱 꺼짐(에뮬레이터 GPU 모드, MapLibre LocationComponent 그리기 중 SIGSEGV) 수정 — 내 차 표시를 직접 그린 화살표 마커로 되돌림. 계산 규칙·순위·문구는 그대로.
